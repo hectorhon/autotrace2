@@ -7,6 +7,7 @@ module Main where
 import Servant
 import Network.Wai
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.Static
 import Config
 import AppM
 import Area.Site
@@ -26,4 +27,6 @@ app :: Config -> Application
 app cfg = serve site (readerServer cfg)
 
 main :: IO ()
-main = run 3000 (app defaultConfig)
+main = do
+  cc <- initCaching PublicStaticCaching
+  run 3000 $ staticPolicy' cc (addBase "static") $ app defaultConfig

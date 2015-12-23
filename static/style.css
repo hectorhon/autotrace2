@@ -1,0 +1,278 @@
+@font-face {
+    font-family: 'OpenSans';
+    src: url('/fonts/OpenSans-Regular.woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'OpenSans';
+    src: url('/fonts/OpenSans-Bold.woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'OpenSans';
+    src: url('/fonts/OpenSans-Italic.woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+body {
+    font-family: 'OpenSans';
+    background-color: white;
+    width: 800px;
+    margin: 3em auto auto auto;
+}
+
+h1 {
+    margin: 1em 0 0 0;
+}
+
+.subtitle {
+    margin-bottom: 1em;
+}
+
+h2 {
+    margin: 1.5em 0 0.5em 0;
+}
+
+.banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: powderblue;
+}
+
+.navigation {
+    margin: 0 0 1.5em 0;
+    padding: 0;
+}
+
+.navigation li {
+    display: inline-block;
+    padding-right: 1em;
+}
+
+.navigation .selected {
+    font-weight: bold;
+}
+
+form {
+    margin: 1em;
+}
+
+label {
+    display: block;
+    margin: 1em 0;
+}
+
+label span {
+    display: inline-block;
+    width: 10em;
+}
+
+
+.line-form {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.line-form label {
+    display: inline-block;
+    margin: 0;
+}
+
+.line-form label span {
+    display: inline-block;
+    width: auto;
+}
+
+.line-form button {
+    margin: 0 2em;
+}
+
+input {
+    font-family: 'OpenSans';
+    border: 1px solid lightblue;
+    font-size: 1.1em;
+    padding: 6px 12px;
+    margin: 0 1em;
+    width: 20em;
+}
+
+input:focus {
+    border: 1px solid blue;
+}
+
+.input-link {
+    margin: 0 1em;
+    padding: 0px 12px;
+    display: inline-block;
+}
+
+select {
+    font-family: 'OpenSans';
+    border: 1px solid lightblue;
+    font-size: 1.1em;
+    padding: 6px 12px;
+    margin: 0 1em;
+    width: 15em;
+    background-color: white;
+}
+
+#start-field, #end-field, #starttime-field, #endtime-field {
+    width: 10em;
+    text-align: center;
+}
+
+button {
+    font-family: 'OpenSans';
+    margin: 2em 2em 2em 0;
+    background-color: lemonchiffon;
+    border: 1px solid orange;
+    padding: 3px 18px;
+    font-size: 1em;
+}
+
+button:hover {
+    background-color: yellow;
+    cursor: pointer;
+}
+
+#summary {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.time-scale {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.time-scale td {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+}
+
+#uptimes {
+    position: relative;
+    height: 22px;
+    border-bottom: 1px solid palegreen;
+}
+
+.uptime-bar {
+    background-color: palegreen;
+    display: inline-block;
+    position: absolute;
+}
+
+.issue-bar {
+    background-color: pink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 1px solid pink;
+}
+
+.cv-exceed {
+    margin: 6px 0px;
+    border-bottom: 1px solid yellow;
+    cursor: pointer;
+}
+
+.line {
+    fill: none;
+    stroke: blue;
+    stroke-width: 1px;
+}
+
+.axis line, .axis path {
+    fill: none;
+    stroke: green;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    fill: green;
+    font-size: 10px;
+}
+
+.result-table {
+    table-layout: fixed;
+    vertical-align: middle;
+}
+
+.result-table td {
+    text-align: center;
+}
+
+.result-table td:first-child {
+    text-align: left;
+}
+
+.result-table-col-1 { width: 19%; }
+.result-table-col-2 { width: 19%; }
+.result-table-col-3 { width: 19%; }
+.result-table-col-4 { width: 9%; }
+.result-table-col-5 { width: 9%; }
+.result-table-col-6 { width: 9%; }
+.result-table-col-7 { width: 8%; }
+.result-table-col-8 { width: 8%; }
+
+.compliance-bar {
+    position: relative;
+    height: 14px;
+    border: 1px solid lightgreen;
+}
+
+.quality-bar {
+    position: relative;
+    height: 14px;
+    border: 1px solid lightblue;
+}
+
+.mv-sat-bar, .cv-aff-by-sat-bar {
+    position: relative;
+    height: 14px;
+    border: 1px solid orange;
+}
+
+.compliance-bar-inner {
+    position: absolute;
+    height: 100%;
+    background-color: lightgreen;
+}
+
+.quality-bar-inner {
+    position: absolute;
+    height: 100%;
+    background-color: lightblue;
+}
+
+.mv-sat-bar-inner, .cv-aff-by-sat-bar-inner {
+    position: absolute;
+    height: 100%;
+    background-color: orange;
+}
+
+.bar-inner-text {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    font-size: 10px;
+    color: transparent;
+}
+
+.bar-inner-text:hover {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    font-size: 10px;
+    color: black;
+}
