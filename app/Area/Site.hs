@@ -5,13 +5,14 @@
 module Area.Site where
 
 import Servant
+import Servant.HTML.Blaze
+import Text.Blaze.Html5
 import AppM
-import Data.Text
 
-type AreaSite = Get '[PlainText] Text
+type AreaSite = Get '[HTML] Html
 
 areaSite :: Proxy AreaSite
 areaSite = Proxy
 
 areaServer :: ServerT AreaSite AppM
-areaServer = return "area"
+areaServer = return $ docTypeHtml $ h1 "area"
