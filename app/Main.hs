@@ -11,18 +11,22 @@ import Network.Wai.Middleware.Static
 import Database.Persist.Postgresql
 import Control.Monad.Logger
 import System.IO
+import Data.Text (Text)
 import Data.ByteString.Char8 (pack)
 import Config
 import AppM
+import Schema
 import Area.Site
 
-type Site = "area" :> AreaSite
+type Site = "migrate" :> Post '[PlainText] Text
+       :<|> "area"    :> AreaSite
 
 site :: Proxy Site
 site = Proxy
 
 server :: ServerT Site AppM
-server = areaServer
+server = (runDb (runMigration migrateAll) >> return "migrate requested")
+    :<|> areaServer
 
 readerServer :: Config -> Server Site
 readerServer cfg = enter (readerToEither cfg) server
