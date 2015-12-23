@@ -38,6 +38,7 @@ executable autotrace2-exe
                      , servant-server
                      , servant-blaze
                      , blaze-html
+                     , network-uri
                      , persistent-postgresql
                      , persistent-template
                      , autotrace2

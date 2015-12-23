@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Schema
   ( module Schema
@@ -12,8 +13,13 @@ module Schema
   ) where
 
 import Database.Persist.TH
+import Database.Persist.Postgresql
 import Data.Time
 import SchemaTypes
+import Servant
+import Control.Monad.Except
+import Data.Text (Text, unpack, pack)
+import Data.Text.Read (Reader, decimal)
 
 share [ mkPersist sqlSettings,
         mkMigrate "migrateAll",
@@ -74,3 +80,25 @@ share [ mkPersist sqlSettings,
       time         UTCTime
       category     EventType
   |]
+
+instance FromFormUrlEncoded Area where
+  fromFormUrlEncoded params = runExcept $ do
+    name <- maybe (throwError "Missing name")
+                  (return . unpack)
+                  (lookup "name" params)
+    mParent <- case lookup "parent" params of
+      Nothing -> return Nothing
+      Just p  -> either (throwError)
+                        (return . Just . toSqlKey . fromIntegral . fst)
+                        (decimal p :: Either String (Integer, Text))
+    description <- maybe (throwError "Missing description")
+                         (return . unpack)
+                         (lookup "description" params)
+    return (Area name description mParent)
+
+instance FromText (Key Area) where
+  fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)
+             . (decimal :: Reader Integer)
+
+instance ToText (Key Area) where
+  toText = pack . show . fromSqlKey
