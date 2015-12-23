@@ -7,18 +7,23 @@ module Main where
 import Servant
 import Network.Wai
 import Network.Wai.Handler.Warp
-import Data.Text
+import Config
+import AppM
+import Area.Site
 
-type TestAPI = "test" :> Get '[PlainText] Text
+type Site = "area" :> AreaSite
+
+site :: Proxy Site
+site = Proxy
+
+server :: ServerT Site AppM
+server = areaServer
+
+readerServer :: Config -> Server Site
+readerServer cfg = enter (readerToEither cfg) server
+
+app :: Config -> Application
+app cfg = serve site (readerServer cfg)
 
 main :: IO ()
-main = run 3000 app
-
-app :: Application
-app = serve testAPI server
-
-server :: Server TestAPI
-server = return "test"
-
-testAPI :: Proxy TestAPI
-testAPI = Proxy
+main = run 3000 (app defaultConfig)

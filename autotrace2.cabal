@@ -27,9 +27,12 @@ executable autotrace2-exe
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , text
+                     , either
+                     , mtl
                      , wai
                      , warp
                      , servant-server
+                     , persistent-postgresql
                      , autotrace2
   default-language:    Haskell2010
 
