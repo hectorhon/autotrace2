@@ -9,6 +9,7 @@ import Control.Monad
 import Data.Maybe
 import Common.Views
 import Area.Links
+import Blc.Links
 import Schema
 
 areaHomePage :: [Entity Area] -> Html
@@ -24,16 +25,23 @@ areaNewPage mParent = layout "New area" $ do
   h1 "New area"
   areaForm mParent Nothing
 
-areaIdPage :: Entity Area -> Maybe (Entity Area) -> [Entity Area] -> Html
-areaIdPage (Entity aid area) mParent children = layout (areaName area) $ do
+areaIdPage :: Entity Area -> Maybe (Entity Area)
+           -> [Entity Area] -> [Entity Blc]
+           -> Html
+areaIdPage (Entity aid area) mParent children blcs = layout (areaName area) $ do
   H.h1 (toHtml $ areaName area)
   H.h2 "Definition"
   areaForm mParent (Just area)
-  H.h2 "Go deeper"
+  H.h2 "Subareas"
   ul $ do
     forM_ children (\ (Entity aid' area') -> li $
       a ! href (viewAreaLink aid') $ toHtml (areaName area'))
     li $ a ! href (toCreateAreaLink aid) $ "New subarea..."
+  H.h2 "Base layer controllers"
+  ul $ do
+    forM_ blcs (\ (Entity bid blc) -> li $
+      a ! href (viewBlcLink aid bid) $ toHtml (blcName blc))
+    li $ a ! href (toCreateBlcLink aid) $ "New base layer controller..."
 
 areaForm :: Maybe (Entity Area) -> Maybe Area -> Html
 areaForm mParent mArea = let
