@@ -30,6 +30,7 @@ executable autotrace2-exe
                      , text
                      , time
                      , either
+                     , transformers
                      , monad-logger
                      , mtl
                      , wai

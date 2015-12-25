@@ -4,11 +4,11 @@
 module Area.API where
 
 import Servant
-import Schema
 import Servant.HTML.Blaze
 import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
+import Schema
 
 type AreaSite = ToCreateArea
            :<|> CreateArea

@@ -9,13 +9,13 @@ import Text.Blaze.Html5 hiding (head, area)
 import Database.Persist.Postgresql
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
-import Data.ByteString.Char8 (pack)
 import Data.Text (Text)
 import AppM
 import Schema
 import Area.API
 import Area.Views
 import Area.Links
+import Common.Responses
 
 areaSite :: ServerT AreaSite AppM
 areaSite = toCreateArea
@@ -63,6 +63,3 @@ deleteArea :: Key Area -> AppM Text
 deleteArea aid = do
   runDb (deleteCascade aid)
   return "deleted"
-
-redirect :: String -> AppM ()
-redirect url = lift $ left $ err301 { errHeaders = [("location", pack url)] }
