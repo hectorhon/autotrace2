@@ -7,8 +7,8 @@ module Area.Site where
 import Servant
 import Text.Blaze.Html5 hiding (head, area)
 import Database.Persist.Postgresql
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
-import Control.Monad.Reader
 import Data.Text (Text)
 import AppM
 import Schema
@@ -19,11 +19,11 @@ import Common.Responses
 
 areaSite :: ServerT AreaSite AppM
 areaSite = toCreateArea
-        :<|> createArea
-        :<|> viewArea
-        :<|> viewAreas
-        :<|> updateArea
-        :<|> deleteArea
+      :<|> createArea
+      :<|> viewArea
+      :<|> viewAreas
+      :<|> updateArea
+      :<|> deleteArea
 
 toCreateArea :: Maybe (Key Area) -> AppM Html
 toCreateArea mAid = case mAid of
