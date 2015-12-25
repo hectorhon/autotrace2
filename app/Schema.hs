@@ -6,6 +6,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Schema
   ( module Schema
@@ -81,6 +83,13 @@ share [ mkPersist sqlSettings,
       category     EventType
   |]
 
+instance ToBackendKey SqlBackend a => FromText (Key a) where
+  fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)
+             . (decimal :: Reader Integer)
+
+instance ToBackendKey SqlBackend a => ToText (Key a) where
+  toText = pack . show . fromSqlKey
+
 instance FromFormUrlEncoded Area where
   fromFormUrlEncoded params = runExcept $ do
     name <- maybe (throwError "Missing name")
@@ -95,10 +104,3 @@ instance FromFormUrlEncoded Area where
                          (return . unpack)
                          (lookup "description" params)
     return (Area name description mParent)
-
-instance FromText (Key Area) where
-  fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)
-             . (decimal :: Reader Integer)
-
-instance ToText (Key Area) where
-  toText = pack . show . fromSqlKey
