@@ -10,27 +10,31 @@ import Database.Persist.Postgresql
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
 import Data.ByteString.Char8 (pack)
+import Data.Text (Text)
 import AppM
 import Schema
 import Area.API
 import Area.Views
+import Area.Links
 
 areaSite :: ServerT AreaSite AppM
 areaSite = toCreateArea
         :<|> createArea
         :<|> viewArea
         :<|> viewAreas
+        :<|> updateArea
+        :<|> deleteArea
 
 toCreateArea :: Maybe (Key Area) -> AppM Html
 toCreateArea mAid = case mAid of
   Nothing -> return (areaNewPage Nothing)
   Just aid -> runDb (selectFirst [AreaId ==. aid] []) >>= return . areaNewPage
 
-createArea :: Area -> AppM Html
+createArea :: Area -> AppM Text
 createArea area = do
-   aid <- runDb (insert area)
-   redirect $ show (fromSqlKey aid) ++ "/definition"
-   return undefined
+  aid <- runDb (insert area)
+  redirect (viewAreaLink' aid)
+  return undefined
 
 viewArea :: Key Area -> AppM Html
 viewArea aid = do
@@ -48,6 +52,17 @@ viewAreas :: AppM Html
 viewAreas = do
    areas <- runDb $ selectList [AreaParent ==. Nothing] []
    return (areaHomePage areas)
+
+updateArea :: Area -> Key Area -> AppM Text
+updateArea area aid = do
+  runDb (replace aid area)
+  redirect (viewAreaLink' aid)
+  return undefined
+
+deleteArea :: Key Area -> AppM Text
+deleteArea aid = do
+  runDb (deleteCascade aid)
+  return "deleted"
 
 redirect :: String -> AppM ()
 redirect url = lift $ left $ err301 { errHeaders = [("location", pack url)] }
