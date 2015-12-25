@@ -9,6 +9,7 @@ module Common.Views where
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as Ha
 import Control.Monad (forM_)
+import Area.Links
 
 layout :: String -> Html -> Html
 layout pageTitle pageContents = docTypeHtml $ do
@@ -22,7 +23,17 @@ layout pageTitle pageContents = docTypeHtml $ do
     script ! src "/d3.js" $ ""
     link ! rel "stylesheet" ! type_ "text/css" ! href "/jquery-ui.css"
     link ! rel "stylesheet" ! type_ "text/css" ! href "/style.css"
-  H.body pageContents
+  H.body $ do
+    banner
+    pageContents
+
+banner :: Html
+banner = H.div ! class_ "banner" $ do
+  a ! href "/" $ "autotrace"
+
+homePage :: Html
+homePage = layout "Home" $ do
+  p $ a ! href viewAreasLink $ "Browse by location"
 
 class ToString a where
   toString :: a -> String

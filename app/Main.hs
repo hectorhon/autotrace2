@@ -16,11 +16,13 @@ import Config
 import AppM
 import Schema
 import API
+import Common.Views (homePage)
 import Area.Site
 import Blc.Site
 
 server :: ServerT Site AppM
 server = (runDb (runMigration migrateAll) >> return "migrate requested")
+    :<|> return homePage
     :<|> areaSite
     :<|> blcSite
 
