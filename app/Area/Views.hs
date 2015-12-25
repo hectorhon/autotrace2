@@ -8,20 +8,16 @@ import Database.Persist.Postgresql
 import Control.Monad
 import Data.Maybe
 import Common.Views
-import Common.Links
-import Area.API
-import Servant
+import Area.Links
 import Schema
 
 areaHomePage :: [Entity Area] -> Html
 areaHomePage areas = layout "Site list" $ do
   h1 "Select a plant"
   ul $ do
-    forM_ areas (\ (Entity aid area) -> let aid' = show (fromSqlKey aid) in
-      li $ a ! href (stringValue $ "./" ++ aid' ++ "/definition")
-             $ toHtml (areaName area))
-    li $ a ! href (stringValue $ show $ linkTo (Proxy :: Proxy ViewAreas))
-           $ "New plant..."
+    forM_ areas (\ (Entity aid area) ->
+      li $ a ! href (viewAreaLink aid) $ toHtml (areaName area))
+    li $ a ! href toCreateTopAreaLink $ "New plant..."
 
 areaNewPage :: Maybe (Entity Area) -> Html
 areaNewPage mParent = layout "New area" $ do
@@ -36,10 +32,8 @@ areaIdPage (Entity aid area) mParent children = layout (areaName area) $ do
   H.h2 "Go deeper"
   ul $ do
     forM_ children (\ (Entity aid' area') -> li $
-      a ! href (stringValue $  "../" ++ show (fromSqlKey aid') ++ "/definition")
-        $ toHtml (areaName area'))
-    li $ a ! href (stringValue $  "../new?parent=" ++ show (fromSqlKey aid))
-           $ "New subarea..."
+      a ! href (viewAreaLink aid') $ toHtml (areaName area'))
+    li $ a ! href (toCreateAreaLink aid) $ "New subarea..."
 
 areaForm :: Maybe (Entity Area) -> Maybe Area -> Html
 areaForm mParent mArea = let
@@ -57,26 +51,26 @@ areaForm mParent mArea = let
         when (isJust mParent) (do
           H.label $ do
             H.span "Parent"
-            let link = if isJust mArea then "../" ++ pid ++ "/definition"
-                       else pid ++ "/definition"
             a ! class_ "input-link"
-              ! href (stringValue link) $ toHtml (areaName parent)
+              ! href (viewAreaLink $ entityKey $ fromJust mParent)
+              $ toHtml (areaName parent)
           input ! Ha.name "parent"
                 ! Ha.type_ "hidden"
                 ! Ha.value (stringValue pid))
         button "Save"
         if isJust mArea then do
           button ! Ha.id "area-delete-button" $ "Delete"
-          script " $('#area-delete-button').click(function(e) { \
-                 \   e.preventDefault(); \
-                 \   $.ajax({ \
-                 \     method: 'DELETE', \
-                 \     url: window.location, \
-                 \     success: function() { \
-                 \       window.location.replace('../../area'); \
-                 \     } \
-                 \   }) \
-                 \ }); "
+          script $ toHtml $
+            " $('#area-delete-button').click(function(e) { \
+            \   e.preventDefault(); \
+            \   $.ajax({ \
+            \     method: 'DELETE', \
+            \     url: window.location, \
+            \     success: function() { \
+            \       window.location.replace('"++viewAreasLink'++"'); \
+            \     } \
+            \   }) \
+            \ }); "
         else do
           button ! Ha.id "area-cancel-button" $ "Cancel"
           script " $('#area-cancel-button').click(function(e) { \
