@@ -1,4 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE IncoherentInstances #-}
 
 module Common.Views where
 
@@ -20,11 +24,17 @@ layout pageTitle pageContents = docTypeHtml $ do
     link ! rel "stylesheet" ! type_ "text/css" ! href "/style.css"
   H.body pageContents
 
-field :: Show b => String -> String -> (a -> b) -> Maybe a -> Html
+class ToString a where
+  toString :: a -> String
+instance ToString String where
+  toString = Prelude.id
+instance Show a => ToString a where
+  toString = show
+field :: ToString b => String -> String -> (a -> b) -> Maybe a -> Html
 field fieldLabel fieldName accessor mRecord = H.label $ do
   H.span (toHtml fieldLabel)
   input ! Ha.name (stringValue fieldName)
-        ! Ha.value (stringValue $ maybe "" (show . accessor) mRecord)
+        ! Ha.value (stringValue $ maybe "" (toString . accessor) mRecord)
 
 linkField :: String -> String -> AttributeValue-> Html
 linkField fieldLabel displayText url = H.label $ do

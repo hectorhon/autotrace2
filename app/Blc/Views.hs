@@ -5,11 +5,19 @@ module Blc.Views where
 import Text.Blaze.Html5 as H hiding (area)
 import Text.Blaze.Html5.Attributes as Ha
 import Database.Persist.Postgresql
-import Control.Monad (forM_)
 import Common.Views
-import Blc.Links
 import Area.Links
 import Schema
+
+blcNewPage :: Entity Area -> Html
+blcNewPage parent = layout "New base layer controller" $ do
+  h1 "New base layer controller"
+  blcForm parent Nothing
+
+blcIdPage :: Blc -> Entity Area -> Html
+blcIdPage blc parent = layout (blcName blc) $ do
+  h1 $ toHtml (blcName blc)
+  blcForm parent (Just blc)
 
 blcForm :: Entity Area -> Maybe Blc -> Html
 blcForm (Entity pid parent) mBlc = H.form ! method "post" $ do

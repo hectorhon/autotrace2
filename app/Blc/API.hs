@@ -20,7 +20,7 @@ type ToCreateBlc = "area" :> Capture "aid" (Key Area)
                    :> "blc" :> "new"
                    :> Get '[HTML] Html
 
-type CreateBlc = ReqBody '[FormUrlEncoded] Area
+type CreateBlc = ReqBody '[FormUrlEncoded] Blc
                  :> "area" :> Capture "aid" (Key Area)
                  :> "blc" :> "new"
                  :> Post '[PlainText] Text
@@ -29,9 +29,10 @@ type ViewBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "definition"
                :> Get '[HTML] Html
 
-type UpdateBlc = "area" :> Capture "aid" (Key Area)
-               :> "blc" :> Capture "bid" (Key Blc) :> "definition"
-               :> Post '[PlainText] Text
+type UpdateBlc = ReqBody '[FormUrlEncoded] Blc
+                 :> "area" :> Capture "aid" (Key Area)
+                 :> "blc" :> Capture "bid" (Key Blc) :> "definition"
+                 :> Post '[PlainText] Text
 
 type DeleteBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "definition"

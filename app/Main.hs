@@ -17,10 +17,12 @@ import AppM
 import Schema
 import API
 import Area.Site
+import Blc.Site
 
 server :: ServerT Site AppM
 server = (runDb (runMigration migrateAll) >> return "migrate requested")
     :<|> areaSite
+    :<|> blcSite
 
 readerServer :: Config -> Server Site
 readerServer cfg = enter (readerToEither cfg) server
