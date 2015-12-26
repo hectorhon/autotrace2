@@ -93,3 +93,14 @@ deleteButton buttonId url = do
     \     } \
     \   }) \
     \ }); "
+
+datepicker :: String -> String -> String -> Html
+datepicker fieldId fieldName fieldValue = do
+  input ! Ha.id (stringValue fieldId)
+        ! Ha.name (stringValue fieldName)
+        ! Ha.value (stringValue fieldValue)
+  script $ toHtml $
+    " $('#" ++ fieldId ++ "').datepicker({ \
+    \   dateFormat: 'dd . mm . yy', \
+    \   maxDate: 0, \
+    \ });"

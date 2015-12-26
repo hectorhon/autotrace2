@@ -3,11 +3,12 @@
 module Blc.Views where
 
 import Text.Blaze.Html5 as H hiding (area)
-import Text.Blaze.Html5.Attributes as Ha
+import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
 import Common.Views
 import Area.Links
 import Schema
+import Time
 
 blcNewPage :: Entity Area -> Html
 blcNewPage parent = layout "New base layer controller" $ do
@@ -42,3 +43,16 @@ blcForm (Entity pid parent) mBlc = H.form ! method "post" $ do
   button "Save"
   maybe (cancelButton "blc-cancel-button")
         (deleteButton "blc-delete-button" . viewAreaLink' . blcArea) mBlc
+
+blcCalculatePage :: UTCTime -> UTCTime -> Blc -> Html
+blcCalculatePage start end blc = layout "Single controller calculation" $ do
+  h1 $ toHtml (blcName blc)
+  H.form ! method "post" $ do
+    H.label $ do
+      H.span "Start"
+      datepicker "start-field" "start" (formatDay start)
+    H.label $ do
+      H.span "End"
+      datepicker "end-field" "end" (formatDay end)
+    button "Submit"
+    cancelButton "blc-calculate-cancel-button"

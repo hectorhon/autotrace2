@@ -9,12 +9,14 @@ import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
 import Schema
+import Time
 
 type BlcSite = ToCreateBlc
           :<|> CreateBlc
           :<|> ViewBlc
           :<|> UpdateBlc
           :<|> DeleteBlc
+          :<|> ToCalculateBlc
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area)
                    :> "blc" :> "new"
@@ -37,3 +39,8 @@ type UpdateBlc = ReqBody '[FormUrlEncoded] Blc
 type DeleteBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "definition"
                :> Delete '[PlainText] Text
+
+type ToCalculateBlc = QueryParam "start" Day :> QueryParam "end" Day
+                      :> "area" :> Capture "aid" (Key Area)
+                      :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
+                      :> Get '[HTML] Html

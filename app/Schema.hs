@@ -16,13 +16,13 @@ module Schema
 
 import Database.Persist.TH
 import Database.Persist.Postgresql
-import Data.Time
-import SchemaTypes
 import Servant
 import Control.Monad.Except
 import Data.Maybe (listToMaybe)
 import Data.Text (Text, unpack, pack)
 import Data.Text.Read (Reader, decimal, double)
+import SchemaTypes
+import Time
 
 share [ mkPersist sqlSettings,
         mkMigrate "migrateAll",
@@ -83,6 +83,12 @@ share [ mkPersist sqlSettings,
       time         UTCTime
       category     EventType
   |]
+
+instance FromText Day where
+  fromText = parseDay . unpack
+
+instance ToText Day where
+  toText day = pack $ formatDay (UTCTime day 0)
 
 instance ToBackendKey SqlBackend a => FromText (Key a) where
   fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)

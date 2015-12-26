@@ -11,10 +11,12 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
 import Control.Monad.Trans.Maybe
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Maybe
 import Data.Text (Text)
 import AppM
 import Schema
+import Time
 import Blc.API
 import Blc.Views
 import Area.Links
@@ -26,6 +28,7 @@ blcSite = toCreateBlc
      :<|> viewBlc
      :<|> updateBlc
      :<|> deleteBlc
+     :<|> toCalculateBlc
 
 toCreateBlc :: Key Area -> AppM Html
 toCreateBlc aid = do
@@ -59,3 +62,17 @@ deleteBlc :: Key Area -> Key Blc -> AppM Text
 deleteBlc pid bid = do
   runDb $ deleteWhere [BlcArea ==. pid, BlcId ==. bid]
   return "deleted"
+
+toCalculateBlc :: Maybe Day -> Maybe Day -> Key Area -> Key Blc -> AppM Html
+toCalculateBlc mStart mEnd pid bid = do
+  mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
+  case mBlc of
+    Nothing  -> lift (left err404)
+    Just (Entity _ blc) -> do
+      start <- maybe (liftIO $ relativeDay (-1))
+                     (return . flip UTCTime 0)
+                     mStart
+      end <- maybe (liftIO $ relativeDay 0)
+                   (return . flip UTCTime 0)
+                   mEnd
+      return (blcCalculatePage start end blc)
