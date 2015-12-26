@@ -17,15 +17,15 @@ type AreaSite = ToCreateArea
            :<|> UpdateArea
            :<|> DeleteArea
 
-type ToCreateArea = QueryParam "parent" (Key Area)
-                    :> "area" :> "new"
+type ToCreateArea = "area" :> "new"
+                    :> QueryParam "parent" (Key Area)
                     :> Get '[HTML] Html
 
 type ToCreateArea' = "area" :> "new"
                      :> Get '[HTML] Html
 
-type CreateArea = ReqBody '[FormUrlEncoded] Area
-                  :> "area" :> "new"
+type CreateArea = "area" :> "new"
+                  :> ReqBody '[FormUrlEncoded] Area
                   :> Post '[PlainText] Text
 
 type ViewArea = "area" :> Capture "aid" (Key Area) :> "definition"
@@ -34,8 +34,8 @@ type ViewArea = "area" :> Capture "aid" (Key Area) :> "definition"
 type ViewAreas = "area"
                  :> Get '[HTML] Html
 
-type UpdateArea = ReqBody '[FormUrlEncoded] Area
-                  :> "area" :> Capture "aid" (Key Area) :> "definition"
+type UpdateArea = "area" :> Capture "aid" (Key Area) :> "definition"
+                  :> ReqBody '[FormUrlEncoded] Area
                   :> Post '[PlainText] Text
 
 type DeleteArea = "area" :> Capture "aid" (Key Area) :> "definition"

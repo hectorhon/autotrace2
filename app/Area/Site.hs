@@ -54,8 +54,8 @@ viewAreas = do
    areas <- runDb $ selectList [AreaParent ==. Nothing] []
    return (areaHomePage areas)
 
-updateArea :: Area -> Key Area -> AppM Text
-updateArea area aid = do
+updateArea :: Key Area -> Area -> AppM Text
+updateArea aid area = do
   runDb (replace aid area)
   redirect (viewAreaLink' aid)
   return undefined

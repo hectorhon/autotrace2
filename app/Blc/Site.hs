@@ -36,8 +36,8 @@ toCreateBlc aid = do
   case mParent of Nothing     -> lift (left err404)
                   Just parent -> return (blcNewPage parent)
 
-createBlc :: Blc -> Key Area -> AppM Text
-createBlc blc pid = do
+createBlc :: Key Area -> Blc -> AppM Text
+createBlc pid blc = do
   _ <- runDb (insert blc)
   redirect (viewAreaLink' pid)
   return undefined
@@ -51,8 +51,8 @@ viewBlc pid bid = runMaybeT (do
   return (entityVal $ fromJust mBlc, fromJust mParent))
   >>= maybe (lift $ left err404) (return . uncurry blcIdPage)
 
-updateBlc :: Blc -> Key Area -> Key Blc -> AppM Text
-updateBlc blc pid bid = do
+updateBlc :: Key Area -> Key Blc -> Blc -> AppM Text
+updateBlc pid bid blc = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   if isNothing mBlc then (lift $ left err404) else runDb (replace bid blc)
   redirect (viewAreaLink' pid)
@@ -63,8 +63,8 @@ deleteBlc pid bid = do
   runDb $ deleteWhere [BlcArea ==. pid, BlcId ==. bid]
   return "deleted"
 
-toCalculateBlc :: Maybe Day -> Maybe Day -> Key Area -> Key Blc -> AppM Html
-toCalculateBlc mStart mEnd pid bid = do
+toCalculateBlc :: Key Area -> Key Blc -> Maybe Day -> Maybe Day -> AppM Html
+toCalculateBlc pid bid mStart mEnd = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   case mBlc of
     Nothing  -> lift (left err404)
