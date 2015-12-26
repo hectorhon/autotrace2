@@ -43,3 +43,7 @@ type ToCalculateBlc = "area" :> Capture "aid" (Key Area)
                       :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                       :> QueryParam "start" Day :> QueryParam "end" Day
                       :> Get '[HTML] Html
+
+type ToCalculateBlc' = "area" :> Capture "aid" (Key Area)
+                       :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
+                       :> Get '[HTML] Html

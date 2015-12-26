@@ -21,3 +21,9 @@ viewBlcLink' aid bid =
 
 viewBlcLink :: Key Area -> Key Blc -> AttributeValue
 viewBlcLink aid bid = stringValue $ viewBlcLink' aid bid
+
+
+
+toCalculateBlcDefaultDayLink :: Key Area -> Key Blc -> AttributeValue
+toCalculateBlcDefaultDayLink aid bid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToCalculateBlc') aid bid)

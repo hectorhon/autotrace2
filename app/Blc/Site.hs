@@ -48,7 +48,7 @@ viewBlc pid bid = runMaybeT (do
   guard (isJust mBlc)
   mParent <- runDb $ selectFirst [AreaId ==. pid] []
   guard (isJust mParent)
-  return (entityVal $ fromJust mBlc, fromJust mParent))
+  return (fromJust mBlc, fromJust mParent))
   >>= maybe (lift $ left err404) (return . uncurry blcIdPage)
 
 updateBlc :: Key Area -> Key Blc -> Blc -> AppM Text
@@ -68,7 +68,7 @@ toCalculateBlc pid bid mStart mEnd = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   case mBlc of
     Nothing  -> lift (left err404)
-    Just (Entity _ blc) -> do
+    Just blc -> do
       start <- maybe (liftIO $ relativeDay (-1))
                      (return . flip UTCTime 0)
                      mStart

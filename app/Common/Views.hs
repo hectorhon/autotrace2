@@ -104,3 +104,10 @@ datepicker fieldId fieldName fieldValue = do
     \   dateFormat: 'dd . mm . yy', \
     \   maxDate: 0, \
     \ });"
+
+navigation :: [(String, AttributeValue)] -> Int -> Html
+navigation links choice = ul ! class_ "navigation" $ forM_ (zip [1..] links)
+  (\ (index, (linkLabel, linkUrl)) -> li $
+    a ! href linkUrl
+      ! class_ (if choice == index then "selected" else "")
+      $ toHtml linkLabel)
