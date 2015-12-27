@@ -36,6 +36,7 @@ executable autotrace2-exe
                      , wai
                      , warp
                      , wai-middleware-static
+                     , http-types
                      , servant-server
                      , servant-blaze
                      , blaze-html

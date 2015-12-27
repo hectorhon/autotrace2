@@ -5,6 +5,7 @@ module Blc.Links where
 import Servant
 import Database.Persist.Postgresql
 import Text.Blaze.Html5
+import Data.Time
 import Common.Links
 import Blc.API
 import Schema
@@ -27,3 +28,15 @@ viewBlcLink aid bid = stringValue $ viewBlcLink' aid bid
 toCalculateBlcDefaultDayLink :: Key Area -> Key Blc -> AttributeValue
 toCalculateBlcDefaultDayLink aid bid = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCalculateBlc') aid bid)
+
+
+
+viewBlcsPerformanceDefaultDayLink :: Key Area -> AttributeValue
+viewBlcsPerformanceDefaultDayLink aid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance') aid)
+
+
+
+toCalculateAreaBlcsLink :: Key Area -> Day -> Day -> AttributeValue
+toCalculateAreaBlcsLink aid start end = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToCalculateAreaBlcs) aid start end)

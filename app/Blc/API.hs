@@ -17,6 +17,8 @@ type BlcSite = ToCreateBlc
           :<|> UpdateBlc
           :<|> DeleteBlc
           :<|> ToCalculateBlc
+          :<|> ViewBlcsPerformance
+          :<|> ToCalculateAreaBlcs
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area)
                    :> "blc" :> "new"
@@ -47,3 +49,17 @@ type ToCalculateBlc = "area" :> Capture "aid" (Key Area)
 type ToCalculateBlc' = "area" :> Capture "aid" (Key Area)
                        :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                        :> Get '[HTML] Html
+
+type ViewBlcsPerformance = "area" :> Capture "aid" (Key Area)
+                           :> "blc" :> "performance"
+                           :> QueryParam "start" Day :> QueryParam "end" Day
+                           :> Get '[HTML] Html
+
+type ViewBlcsPerformance' = "area" :> Capture "aid" (Key Area)
+                            :> "blc" :> "performance"
+                            :> Get '[HTML] Html
+
+type ToCalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
+                           :> "blc" :> "calculate"
+                           :> QueryParam "start" Day :> QueryParam "end" Day
+                           :> Get '[HTML] Html

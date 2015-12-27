@@ -111,3 +111,20 @@ navigation links choice = ul ! class_ "navigation" $ forM_ (zip [1..] links)
     a ! href linkUrl
       ! class_ (if choice == index then "selected" else "")
       $ toHtml linkLabel)
+
+bar :: Real a => String -> a -> a -> String -> Html
+bar color val maxVal barContents = let
+  val'      = realToFrac val :: Double
+  maxVal'   = realToFrac maxVal :: Double
+  percent   = if maxVal' == 0 then 0 else val' / maxVal' * 100
+  tooltip   = show (round percent :: Int) ++ " %"
+  barContents' = if null barContents then tooltip else barContents
+  in H.div ! class_ "bar"
+           ! Ha.style (stringValue $ "border:1px solid " ++ color ++";")
+           ! Ha.title (stringValue tooltip) $ do
+       H.div ! class_ "bar-inner"
+             ! Ha.style (stringValue $
+                         "background-color:" ++ color        ++ ";"
+                      ++ "width:"            ++ show percent ++ "%;")
+             $ ""
+       H.div ! class_ "bar-inner-text" $ toHtml barContents'

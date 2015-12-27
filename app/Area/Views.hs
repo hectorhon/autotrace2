@@ -30,6 +30,7 @@ areaIdPage :: Entity Area -> Maybe (Entity Area)
            -> Html
 areaIdPage (Entity aid area) mParent children blcs = layout (areaName area) $ do
   H.h1 (toHtml $ areaName area)
+  areaNavigation aid 1
   H.h2 "Definition"
   areaForm mParent (Just area)
   H.h2 "Subareas"
@@ -42,6 +43,13 @@ areaIdPage (Entity aid area) mParent children blcs = layout (areaName area) $ do
     forM_ blcs (\ (Entity bid blc) -> li $
       a ! href (viewBlcLink aid bid) $ toHtml (blcName blc))
     li $ a ! href (toCreateBlcLink aid) $ "New base layer controller..."
+
+areaNavigation :: Key Area -> Int -> Html
+areaNavigation aid = navigation
+  [ ("Definition", viewAreaLink aid)
+  , ("Base layer", viewBlcsPerformanceDefaultDayLink aid)
+  ]
+
 
 areaForm :: Maybe (Entity Area) -> Maybe Area -> Html
 areaForm mParent mArea = let

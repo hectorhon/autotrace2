@@ -24,6 +24,7 @@ body {
     background-color: white;
     width: 800px;
     margin: 3em auto auto auto;
+    overflow-y: scroll;
 }
 
 h1 {
@@ -225,40 +226,14 @@ button:hover {
 .result-table-col-7 { width: 8%; }
 .result-table-col-8 { width: 8%; }
 
-.compliance-bar {
+.bar {
     position: relative;
     height: 14px;
-    border: 1px solid lightgreen;
 }
 
-.quality-bar {
-    position: relative;
-    height: 14px;
-    border: 1px solid lightblue;
-}
-
-.mv-sat-bar, .cv-aff-by-sat-bar {
-    position: relative;
-    height: 14px;
-    border: 1px solid orange;
-}
-
-.compliance-bar-inner {
+.bar-inner {
     position: absolute;
     height: 100%;
-    background-color: lightgreen;
-}
-
-.quality-bar-inner {
-    position: absolute;
-    height: 100%;
-    background-color: lightblue;
-}
-
-.mv-sat-bar-inner, .cv-aff-by-sat-bar-inner {
-    position: absolute;
-    height: 100%;
-    background-color: orange;
 }
 
 .bar-inner-text {
@@ -270,9 +245,5 @@ button:hover {
 }
 
 .bar-inner-text:hover {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    font-size: 10px;
     color: black;
 }
