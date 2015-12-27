@@ -17,12 +17,10 @@ module Schema
 import Database.Persist.TH
 import Database.Persist.Postgresql
 import Servant
-import Network.HTTP.Types (urlEncode)
 import Control.Monad.Except
 import Data.Maybe (listToMaybe)
 import Data.Text (Text, unpack, pack)
 import Data.Text.Read (Reader, decimal, double)
-import qualified Data.ByteString.Char8 as C (unpack, pack)
 import SchemaTypes
 import Time
 
@@ -85,15 +83,6 @@ share [ mkPersist sqlSettings,
       time         UTCTime
       category     EventType
   |]
-
-urlEncode' :: String -> String
-urlEncode' = C.unpack . urlEncode True . C.pack
-
-instance FromText Day where
-  fromText = parseDay . unpack
-
-instance ToText Day where
-  toText = pack . urlEncode' . formatDay . flip UTCTime 0
 
 instance ToBackendKey SqlBackend a => FromText (Key a) where
   fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)

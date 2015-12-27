@@ -4,15 +4,42 @@ module Time
   ) where
 
 import Data.Time
+import Servant
+import Network.HTTP.Types (urlEncode)
+import Data.Text (pack, unpack)
+import qualified Data.ByteString.Char8 as C (pack, unpack)
+
+-- * Time references
 
 tz :: TimeZone
 tz = TimeZone (8*60) False "+8"
+
+refTime :: UTCTime
+refTime = UTCTime (fromGregorian 1970 1 1) 0
+
+-- * Servant instances
+
+urlEncode' :: String -> String
+urlEncode' = C.unpack . urlEncode True . C.pack
+
+instance ToText Day where
+  toText = pack . urlEncode' . formatDay . flip UTCTime 0
+
+instance FromText Day where
+  fromText = parseDay . unpack
+
+instance ToText UTCTime where
+  toText = pack.show.(round::NominalDiffTime->Integer).flip diffUTCTime refTime
+
+-- * Parse from a string
 
 parseDay :: String -> Maybe Day
 parseDay = parseTimeM True defaultTimeLocale "%d . %m . %Y"
 
 parseClock :: String -> Maybe TimeOfDay
 parseClock = parseTimeM True defaultTimeLocale "%R"
+
+-- * Format to a string
 
 formatDay :: UTCTime -> String
 formatDay = formatTime defaultTimeLocale "%d . %m . %Y" . utcToLocalTime tz
@@ -26,8 +53,7 @@ formatNormal = formatTime defaultTimeLocale "%d . %m . %Y %R" .utcToLocalTime tz
 formatClock :: UTCTime -> String
 formatClock = formatTime defaultTimeLocale "%R" . utcToLocalTime tz
 
-refTime :: UTCTime
-refTime = UTCTime (fromGregorian 1970 1 1) 0
+-- * Relative time
 
 relativeDay :: Integer -> IO UTCTime
 relativeDay offset = do
