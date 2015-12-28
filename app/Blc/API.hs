@@ -19,6 +19,7 @@ type BlcSite = ToCreateBlc
           :<|> ToCalculateBlc
           :<|> ViewBlcsPerformance
           :<|> ToCalculateAreaBlcs
+          :<|> CalculateAreaBlcs
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area)
                    :> "blc" :> "new"
@@ -63,3 +64,8 @@ type ToCalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                            :> "blc" :> "calculate"
                            :> QueryParam "start" Day :> QueryParam "end" Day
                            :> Get '[HTML] Html
+
+type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
+                         :> "blc" :> "calculate"
+                         :> ReqBody '[FormUrlEncoded] (Day, Day)
+                         :> Post '[PlainText] Text

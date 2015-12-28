@@ -20,6 +20,7 @@ import Time
 import Blc.API
 import Blc.Views
 import Blc.Queries
+import Blc.Calculate
 import Area.Links
 import Common.Responses
 
@@ -32,6 +33,7 @@ blcSite = toCreateBlc
      :<|> toCalculateBlc
      :<|> viewBlcsPerformance
      :<|> toCalculateAreaBlcs
+     :<|> calculateAreaBlcs
 
 toCreateBlc :: Key Area -> AppM Html
 toCreateBlc aid = do
@@ -107,3 +109,10 @@ toCalculateAreaBlcs aid mStart mEnd = do
                    (return . flip UTCTime 0)
                    mEnd
       return (areaBlcCalculatePage start end area)
+
+calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
+calculateAreaBlcs aid (start, end) = do
+  blcs <- runDb $ selectList [BlcArea ==. aid] []
+  forM_ blcs (markCalculate (UTCTime start 0) (UTCTime end 0))
+  redirect (viewAreaLink' aid)
+  return undefined

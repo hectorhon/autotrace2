@@ -16,6 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     TimeSeriesData, Time
+  other-modules:       TimeSeriesData.Types
+                     , TimeSeriesData.Retrieve
+                     , TimeSeriesData.Compares
+                     , TimeSeriesData.Arithmetic
+                     , TimeSeriesData.Counts
+                     , TimeSeriesData.Changes
+                     , TimeSeriesData.Expressions
+                     , TimeSeriesData.Interpolate
   ghc-options:         -Wall
   build-depends:       base >= 4.7 && < 5
                      , bytestring
@@ -33,6 +41,24 @@ library
 executable autotrace2-exe
   hs-source-dirs:      app
   main-is:             Main.hs
+  other-modules:       API
+                     , AppM
+                     , Area.API
+                     , Area.Links
+                     , Area.Site
+                     , Area.Views
+                     , Blc.API
+                     , Blc.Calculate
+                     , Blc.Links
+                     , Blc.Queries
+                     , Blc.Site
+                     , Blc.Views
+                     , Common.Links
+                     , Common.Responses
+                     , Common.Views
+                     , Config
+                     , Schema
+                     , SchemaTypes
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bytestring

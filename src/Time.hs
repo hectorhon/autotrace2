@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Time
   ( module Time
   , module Data.Time
@@ -6,6 +9,7 @@ module Time
 import Data.Time
 import Servant
 import Network.HTTP.Types (urlEncode)
+import Control.Monad.Except
 import Data.Text (pack, unpack)
 import qualified Data.ByteString.Char8 as C (pack, unpack)
 
@@ -30,6 +34,17 @@ instance FromText Day where
 
 instance ToText UTCTime where
   toText = pack.show.(round::NominalDiffTime->Integer).flip diffUTCTime refTime
+
+instance FromFormUrlEncoded (Day, Day) where
+  fromFormUrlEncoded params = runExcept $ do
+    start <- maybe (throwError "Missing start")
+                   (maybe (throwError "Invalid start") return
+                    . parseDay . unpack)
+                   (lookup "start" params)
+    end <- maybe (throwError "Missing end")
+                 (maybe (throwError "Invalid end") return . parseDay . unpack)
+                 (lookup "end" params)
+    return (start, end)
 
 -- * Parse from a string
 
