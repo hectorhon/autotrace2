@@ -22,7 +22,9 @@ library
                      , text
                      , time
                      , either
+                     , mtl
                      , attoparsec
+                     , parsec
                      , http-types
                      , servant-server
                      , servant-client
