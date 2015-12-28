@@ -15,7 +15,7 @@ import Time
 getTSData :: String -> Int -> [String] -> UTCTime -> UTCTime -> IO TSData
 getTSData url port tagNames start end = let tagNames' = nub tagNames in
   mapM (getTSPoints url port start end) tagNames'
-  >>= return . TSData (diffUTCTime refTime start) (diffUTCTime refTime end) .
+  >>= return . TSData (diffUTCTime start refTime) (diffUTCTime end refTime) .
                filter (not . null . snd) . zip tagNames'
 
 getTSPoints :: String -> Int -> UTCTime -> UTCTime -> String -> IO [TSPoint]
