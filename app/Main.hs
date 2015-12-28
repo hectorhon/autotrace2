@@ -10,6 +10,7 @@ import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Static
 import Database.Persist.Postgresql
 import Control.Monad.Logger
+import Control.Concurrent
 import System.IO
 import Data.ByteString.Char8 (pack)
 import Config
@@ -37,5 +38,16 @@ main = do
   connString <- openFile "connString.set" ReadMode >>= hGetLine
   connPool   <- runNoLoggingT $ createPostgresqlPool (pack connString) 1
   caching    <- initCaching PublicStaticCaching
+  qsem       <- newQSem 1
+  counter    <- newMVar 0
+  srcFile    <- openFile "dataSource.set" ReadMode
+  srcUrl     <- hGetLine srcFile
+  srcPort    <- hGetLine srcFile >>= return . read
   run 3000 $ staticPolicy' caching (addBase "static")
-           $ app defaultConfig { getPool = connPool }
+           $ app defaultConfig { getPool = connPool
+                               , getPoolConnStr = pack connString
+                               , getQSem = qsem
+                               , getCounter = counter
+                               , getSrcUrl = srcUrl
+                               , getSrcPort = srcPort
+                               }

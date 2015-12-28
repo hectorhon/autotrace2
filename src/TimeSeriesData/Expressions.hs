@@ -3,7 +3,11 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE KindSignatures #-}
 
-module TimeSeriesData.Expressions where
+module TimeSeriesData.Expressions
+  ( parseExpression
+  , evaluate
+  , listTags
+  ) where
 
 import Prelude hiding (and, or)
 import Text.Parsec
