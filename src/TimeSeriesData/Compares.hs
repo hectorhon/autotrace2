@@ -1,8 +1,8 @@
 module TimeSeriesData.Compares where
 
 import Control.Exception (assert)
-
 import TimeSeriesData.Types
+import TimeSeriesData.Interpolate
 
 compares :: [TSPoint] -> [TSPoint] -> [(TSInterval, Maybe Ordering)]
 compares reds blacks = compares' (toSegments reds) (toSegments blacks)
@@ -101,6 +101,3 @@ intersection ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4)) =
         s = ((1-t)*x3 + t*x4 - x1) / (x2-x1)
         x = (x2-x1)*s + x1
         y = (y2-y1)*s + y1
-
-interpolate :: ((Double, Double), (Double, Double)) -> Double -> Double
-interpolate ((x1, y1), (x2, y2)) x = (y2 - y1) / (x2 - x1) * (x - x1) + y1
