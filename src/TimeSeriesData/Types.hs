@@ -3,8 +3,8 @@
 module TimeSeriesData.Types where
 
 import Data.Time
-import Data.ByteString
-import Data.Attoparsec.ByteString.Char8
+import Data.Text
+import Data.Attoparsec.Text
 
 data TSValue = Continuous Double
              | Discrete String
@@ -22,7 +22,7 @@ data TSData = TSData { startOf :: NominalDiffTime
                      , endOf   :: NominalDiffTime
                      , dataOf  :: [(String, [TSPoint])] }
 
-decode :: ByteString -> Maybe [TSPoint]
+decode :: Text -> Maybe [TSPoint]
 decode raw = maybeResult $ feed (parse tsPointsParser raw) "\n"
   where tsPointsParser = (many' $ tsPointParser <* endOfLine)
         tsPointParser = do t <- decimal

@@ -8,7 +8,7 @@ import Servant
 import Servant.Client
 import Control.Monad.Trans.Either
 import Data.List (nub)
-import Data.ByteString (ByteString)
+import Data.Text (Text)
 import TimeSeriesData.Types
 import Time
 
@@ -23,11 +23,11 @@ getTSPoints url port start end tagName =
   runEitherT (getPoints' url port (Just tagName) (Just start) (Just end))
   >>= return . either (\ _ -> []) (maybe [] id . decode)
 
-type DataAPI = QueryParam "tagname" String
-            :> QueryParam "start" UTCTime
-            :> QueryParam "end" UTCTime
-            :> Get '[OctetStream] ByteString
+type DataAPI = QueryParam "q" String
+            :> QueryParam "s" UTCTime
+            :> QueryParam "e" UTCTime
+            :> Get '[PlainText] Text
 
 getPoints' :: String -> Int -> Maybe String -> Maybe UTCTime -> Maybe UTCTime
-           -> EitherT ServantError IO ByteString
+           -> EitherT ServantError IO Text
 getPoints' url port = client (Proxy :: Proxy DataAPI) $ BaseUrl Http url port
