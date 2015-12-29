@@ -76,6 +76,7 @@ executable autotrace2-exe
                      , servant-server
                      , servant-blaze
                      , blaze-html
+                     , aeson
                      , persistent-postgresql
                      , persistent-template
                      , esqueleto

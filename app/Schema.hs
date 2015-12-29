@@ -28,32 +28,6 @@ share [ mkPersist sqlSettings,
         mkMigrate "migrateAll",
         mkDeleteCascade sqlSettings ]
   [persistLowerCase|
-    Apc
-      name         String
-      uptimeCond   String
-    ApcUptime json
-      apc          ApcId
-      start        UTCTime
-      end          UTCTime
-    ApcIssue json
-      apc          ApcId
-      start        UTCTime
-      end          UTCTime
-      category     String
-      description  String
-      affectUptime Bool
-    Cv json
-      name         String
-      apc          ApcId
-      measTag      String
-      srhTag       String
-      srlTag       String
-      predTag      String
-      selTag       String
-    CvInterval json
-      cv           CvId
-      start        UTCTime
-      end          UTCTime
     Area
       name         String
       description  String
@@ -82,6 +56,48 @@ share [ mkPersist sqlSettings,
       blc          BlcId
       time         UTCTime
       category     EventType
+    Apc
+      name         String
+      area         AreaId
+      uptimeCond   String
+    ApcInterval json
+      apc          ApcId
+      start        UTCTime
+      end          UTCTime
+      category     MetricType
+    ApcIssue json
+      apc            ApcId
+      start          UTCTime
+      end            UTCTime
+      category       String
+      description    String
+      discountUptime Bool
+    Cv json
+      name         String
+      apc          ApcId
+      measTag      String
+      srhTag       String
+      srlTag       String
+      predTag      String
+      selTag       String
+    CvInterval json
+      cv           CvId
+      start        UTCTime
+      end          UTCTime
+      category     MetricType
+    Mv json
+      name         String
+      apc          ApcId
+      measTag      String
+      srhTag       String
+      srlTag       String
+      predTag      String
+      selTag       String
+    MvInterval json
+      mv           MvId
+      start        UTCTime
+      end          UTCTime
+      category     MetricType
   |]
 
 instance ToBackendKey SqlBackend a => FromText (Key a) where
@@ -159,3 +175,16 @@ instance FromFormUrlEncoded Blc where
                          (lookup "calcspicond" params)
     return $ Blc name description area measTag sptTag outTag outMax outMin
                  demandCond uptimeCond objective margin calcMvICond calcSpICond
+
+instance FromFormUrlEncoded Apc where
+  fromFormUrlEncoded params = runExcept $ do
+    name <- maybe (throwError "Missing name")
+                  (return . unpack)
+                  (lookup "name" params)
+    area <- maybe (throwError "Missing or invalid area")
+                  (return)
+                  (lookup "area" params >>= fromText)
+    uptimeCond <- maybe (throwError "Missing uptime condition")
+                        (return . unpack)
+                        (lookup "uptimecond" params)
+    return (Apc name area uptimeCond)

@@ -9,8 +9,10 @@ import Text.Blaze.Html5
 import Data.Text (Text)
 import Area.API
 import Blc.API
+import Apc.API
 
 type Site = "migrate" :> Post '[PlainText] Text
        :<|> Get '[HTML] Html
        :<|> AreaSite
        :<|> BlcSite
+       :<|> ApcSite

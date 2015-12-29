@@ -47,7 +47,8 @@ viewArea aid = do
         Nothing -> return Nothing
         Just pid -> runDb $ selectFirst [AreaId ==. pid] []
       blcs <- runDb $ selectList [BlcArea ==. aid] []
-      return (areaIdPage area mParent children blcs)
+      apcs <- runDb $ selectList [ApcArea ==. aid] []
+      return (areaIdPage area mParent children blcs apcs)
 
 viewAreas :: AppM Html
 viewAreas = do

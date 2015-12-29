@@ -21,8 +21,7 @@ type BlcSite = ToCreateBlc
           :<|> ToCalculateAreaBlcs
           :<|> CalculateAreaBlcs
 
-type ToCreateBlc = "area" :> Capture "aid" (Key Area)
-                   :> "blc" :> "new"
+type ToCreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
                    :> Get '[HTML] Html
 
 type CreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
