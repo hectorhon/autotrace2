@@ -10,7 +10,6 @@ import Data.Time
 import Servant
 import Control.Monad.Except
 import Data.Text (pack, unpack)
-import qualified Data.ByteString.Char8 as C (pack, unpack)
 
 -- * Time references
 

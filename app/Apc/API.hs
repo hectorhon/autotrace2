@@ -8,6 +8,7 @@ import Servant.HTML.Blaze
 import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
+import Data.Time
 import Schema
 
 type ApcSite = ToCreateApc
@@ -15,6 +16,9 @@ type ApcSite = ToCreateApc
           :<|> ViewApc
           :<|> UpdateApc
           :<|> DeleteApc
+          :<|> ToCalculateApc
+          :<|> ViewApcPerformance
+
           :<|> ToCreateApcCv
           :<|> CreateApcCv
           :<|> ViewApcCv
@@ -40,6 +44,22 @@ type UpdateApc = "area" :> Capture "aid" (Key Area)
 type DeleteApc = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
                  :> Delete '[PlainText] Text
+
+type ToCalculateApc = "area" :> Capture "aid" (Key Area)
+                      :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
+                      :> QueryParam "start" Day :> QueryParam "end" Day
+                      :> Get '[HTML] Html
+
+type ToCalculateApc' = "area" :> Capture "aid" (Key Area)
+                       :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
+                       :> Get '[HTML] Html
+
+type ViewApcPerformance = "area" :> Capture "aid" (Key Area)
+                          :> "apc" :> Capture "apcId" (Key Apc) :> "performance"
+                          :> QueryParam "start" Day :> QueryParam "end" Day
+                          :> Get '[HTML] Html
+
+
 
 type ToCreateApcCv = "area" :> Capture "aid" (Key Area)
                      :> "apc" :> Capture "apcId" (Key Apc)

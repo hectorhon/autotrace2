@@ -5,6 +5,7 @@ module Apc.Links where
 import Servant
 import Database.Persist.Postgresql
 import Text.Blaze.Html5
+import Data.Time (Day)
 import Common.Links
 import Apc.API
 import Schema
@@ -28,6 +29,15 @@ toCreateApcCvLink :: Key Area -> Key Apc -> AttributeValue
 toCreateApcCvLink aid apcId = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCreateApcCv) aid apcId)
 
+
+
+toCalculateApcLink :: Key Area -> Key Apc -> Day -> Day -> AttributeValue
+toCalculateApcLink aid apcId start end = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToCalculateApc) aid apcId start end)
+
+toCalculateApcDefaultDayLink :: Key Area -> Key Apc -> AttributeValue
+toCalculateApcDefaultDayLink aid apcId = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToCalculateApc') aid apcId)
 
 
 viewApcCvLink' :: Key Area -> Key Apc -> Key Cv -> String

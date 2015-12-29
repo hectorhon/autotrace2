@@ -5,14 +5,16 @@
 module Apc.Site where
 
 import Servant
-import Text.Blaze.Html5 hiding (area)
+import Text.Blaze.Html5 hiding (area, i, a)
 import Database.Persist.Postgresql
-import Control.Monad.Trans (lift)
+import qualified Database.Esqueleto as E
+import Control.Monad.Trans (lift, liftIO)
 import Control.Monad.Trans.Either
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import AppM
 import Schema
+import Time
 import Apc.API
 import Apc.Views
 import Apc.Links
@@ -25,6 +27,9 @@ apcSite = toCreateApc
      :<|> viewApc
      :<|> updateApc
      :<|> deleteApc
+     :<|> toCalculateApc
+     :<|> viewApcPerformance
+
      :<|> toCreateApcCv
      :<|> createApcCv
      :<|> viewApcCv
@@ -66,6 +71,52 @@ deleteApc :: Key Area -> Key Apc -> AppM Text
 deleteApc pid aid = do
   runDb $ deleteCascadeWhere [ApcArea ==. pid, ApcId ==. aid]
   return "deleted"
+
+toCalculateApc :: Key Area -> Key Apc -> Maybe Day -> Maybe Day -> AppM Html
+toCalculateApc aid apcId mStart mEnd = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  case mApc of
+    Nothing  -> lift (left err404)
+    Just apc -> do
+      start <- maybe (liftIO $ relativeDay (-1)) (return . localDayToUTC) mStart
+      end   <- maybe (liftIO $ relativeDay 0) (return . localDayToUTC) mEnd
+      return (apcCalculatePage start end apc)
+
+viewApcPerformance :: Key Area -> Key Apc -> Maybe Day -> Maybe Day -> AppM Html
+viewApcPerformance aid apcId mStart mEnd = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  case mApc of
+    Nothing  -> lift (left err404)
+    Just apc -> do
+      start <- maybe (liftIO $ relativeDay (-1)) (return . localDayToUTC) mStart
+      end   <- maybe (liftIO $ relativeDay 0) (return . localDayToUTC) mEnd
+      uptimes <- runDb $ (flip selectList) [Asc ApcIntervalStart]
+                 ([ApcIntervalApc ==. apcId] ++
+                  (    [ApcIntervalStart >=. start, ApcIntervalStart <.  end]
+                   ||. [ApcIntervalEnd   >.  start, ApcIntervalEnd   <=. end]
+                   ||. [ApcIntervalStart <=. start, ApcIntervalEnd   >=. end]))
+      issues <- runDb $ (flip selectList) [Asc ApcIssueStart]
+                ([ApcIssueApc ==. apcId] ++
+                 (    [ApcIssueStart  >=. start, ApcIssueStart <.  end]
+                  ||. [ApcIssueEnd    >.  start, ApcIssueEnd   <=. end]
+                  ||. [ApcIssueStart  <=. start, ApcIssueEnd   >=. end]))
+      cvs <- runDb $ selectList [CvApc ==. apcId] [Asc CvName]
+      cvExceeds <- runDb $ E.select $ E.from $
+        \ (i `E.InnerJoin` cv `E.InnerJoin` a) -> do
+          E.on (cv E.^. CvApc E.==. a E.^. ApcId)
+          E.on (i E.^. CvIntervalCv E.==. cv E.^. CvId)
+          E.where_ ((a E.^. ApcId E.==. E.val apcId) E.&&. (
+                  (     (i E.^. CvIntervalStart E.>=. E.val start)
+                  E.&&. (i E.^. CvIntervalStart E.<.  E.val end))
+            E.||. (     (i E.^. CvIntervalEnd   E.>.  E.val start)
+                  E.&&. (i E.^. CvIntervalEnd   E.<=. E.val end))
+            E.||. (     (i E.^. CvIntervalStart E.<=. E.val start)
+                  E.&&. (i E.^. CvIntervalEnd   E.>=. E.val end))
+            ))
+          return i
+      return (apcPerformancePage apc start end uptimes issues cvs cvExceeds)
+
+
 
 toCreateApcCv :: Key Area -> Key Apc -> AppM Html
 toCreateApcCv aid apcId = do
