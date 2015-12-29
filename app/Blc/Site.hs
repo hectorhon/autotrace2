@@ -75,10 +75,10 @@ toCalculateBlc pid bid mStart mEnd = do
     Nothing  -> lift (left err404)
     Just blc -> do
       start <- maybe (liftIO $ relativeDay (-1))
-                     (return . flip UTCTime 0)
+                     (return . localDayToUTC)
                      mStart
       end <- maybe (liftIO $ relativeDay 0)
-                   (return . flip UTCTime 0)
+                   (return . localDayToUTC)
                    mEnd
       return (blcCalculatePage start end blc)
 
@@ -89,10 +89,10 @@ viewBlcsPerformance aid mStart mEnd = do
     Nothing   -> lift (left err404)
     Just area -> do
       start <- maybe (liftIO $ relativeDay (-1))
-                     (return . flip UTCTime 0)
+                     (return . localDayToUTC)
                      mStart
       end <- maybe (liftIO $ relativeDay 0)
-                   (return . flip UTCTime 0)
+                   (return . localDayToUTC)
                    mEnd
       blcResultOf area start end >>= return . areaBlcPage start end
 
@@ -103,16 +103,16 @@ toCalculateAreaBlcs aid mStart mEnd = do
     Nothing   -> lift (left err404)
     Just area -> do
       start <- maybe (liftIO $ relativeDay (-1))
-                     (return . flip UTCTime 0)
+                     (return . localDayToUTC)
                      mStart
       end <- maybe (liftIO $ relativeDay 0)
-                   (return . flip UTCTime 0)
+                   (return . localDayToUTC)
                    mEnd
       return (areaBlcCalculatePage start end area)
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
 calculateAreaBlcs aid (start, end) = do
   blcs <- runDb $ selectList [BlcArea ==. aid] []
-  forM_ blcs (markCalculate (UTCTime start 0) (UTCTime end 0))
+  forM_ blcs (markCalculate (localDayToUTC start) (localDayToUTC end))
   redirect (viewAreaLink' aid)
   return undefined

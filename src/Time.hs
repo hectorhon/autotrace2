@@ -8,7 +8,6 @@ module Time
 
 import Data.Time
 import Servant
-import Network.HTTP.Types (urlEncode)
 import Control.Monad.Except
 import Data.Text (pack, unpack)
 import qualified Data.ByteString.Char8 as C (pack, unpack)
@@ -23,11 +22,8 @@ refTime = UTCTime (fromGregorian 1970 1 1) 0
 
 -- * Servant instances
 
-urlEncode' :: String -> String
-urlEncode' = C.unpack . urlEncode True . C.pack
-
 instance ToText Day where
-  toText = pack . urlEncode' . formatDay . flip UTCTime 0
+  toText = pack . formatDay . flip UTCTime 0
 
 instance FromText Day where
   fromText = parseDay . unpack
@@ -74,3 +70,9 @@ relativeDay :: Integer -> IO UTCTime
 relativeDay offset = do
   UTCTime day _ <- getCurrentTime
   return $ UTCTime (addDays offset day) 0
+
+localDayToUTC :: Day -> UTCTime
+localDayToUTC = localTimeToUTC tz . (flip LocalTime) midnight
+
+utcToLocalDay :: UTCTime -> Day
+utcToLocalDay = localDay . utcToLocalTime tz

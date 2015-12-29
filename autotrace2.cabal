@@ -24,7 +24,7 @@ library
                      , TimeSeriesData.Changes
                      , TimeSeriesData.Expressions
                      , TimeSeriesData.Interpolate
-  ghc-options:         -Wall
+  ghc-options:         -Wall -O
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , text
@@ -59,7 +59,7 @@ executable autotrace2-exe
                      , Config
                      , Schema
                      , SchemaTypes
-  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N -O
   build-depends:       base
                      , bytestring
                      , text

@@ -89,7 +89,7 @@ instance ToBackendKey SqlBackend a => FromText (Key a) where
              . (decimal :: Reader Integer)
 
 instance ToBackendKey SqlBackend a => ToText (Key a) where
-  toText = pack . urlEncode' . show . fromSqlKey
+  toText = pack . show . fromSqlKey
 
 instance FromFormUrlEncoded Area where
   fromFormUrlEncoded params = runExcept $ do

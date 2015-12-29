@@ -40,6 +40,25 @@ blcCalculatePage start end (Entity bid blc) =
       button "Submit"
       cancelButton "blc-calculate-cancel-button"
 
+areaBlcCalculatePage :: UTCTime -> UTCTime -> Entity Area -> Html
+areaBlcCalculatePage start end (Entity aid area) =
+  layout "Calculate controllers by area" $ do
+    h1 $ toHtml (areaName area)
+    areaNavigation aid 2
+    p $ do
+      H.span "Calculate controller performance in "
+      a ! href (viewAreaLink aid) $ toHtml (areaName area)
+      H.span ":"
+    H.form ! method "post" $ do
+      H.label $ do
+        H.span "Start"
+        datepicker "start-field" "start" (formatDay start)
+      H.label $ do
+        H.span "End"
+        datepicker "end-field" "end" (formatDay end)
+      button "Submit"
+      cancelButton "area-blc-calculate-cancel-button"
+
 areaBlcPage :: UTCTime -> UTCTime -> AreaBlcResult -> Html
 areaBlcPage start end result =
   let AreaBlcResult area _ _ _ _ _ _ _ _ subareasBlcResult blcsResult = result
@@ -55,8 +74,8 @@ areaBlcPage start end result =
         datepicker "end-field" "end" (formatDay end)
       button "Refresh"
       a ! href (toCalculateAreaBlcsLink (entityKey area)
-                                        (utctDay start)
-                                        (utctDay end)) $ "Recalculate"
+                                        (utcToLocalDay start)
+                                        (utcToLocalDay end)) $ "Recalculate"
     h2 "Summary"
     byAreasBlcResultTable [result] 
     when (not $ null subareasBlcResult) $ do
@@ -98,25 +117,6 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
         td $ toHtml (show spIntervCount)
         td $ bar "orange" mvSat 100 ""
         td $ bar "orange" cvAffBySat 100 "")
-
-areaBlcCalculatePage :: UTCTime -> UTCTime -> Entity Area -> Html
-areaBlcCalculatePage start end (Entity aid area) =
-  layout "Calculate controllers by area" $ do
-    h1 $ toHtml (areaName area)
-    areaNavigation aid 2
-    p $ do
-      H.span "Calculate controller performance in "
-      a ! href (viewAreaLink aid) $ toHtml (areaName area)
-      H.span ":"
-    H.form ! method "post" $ do
-      H.label $ do
-        H.span "Start"
-        datepicker "start-field" "start" (formatDay start)
-      H.label $ do
-        H.span "End"
-        datepicker "end-field" "end" (formatDay end)
-      button "Submit"
-      cancelButton "area-blc-calculate-cancel-button"
 
 blcsResultTable :: [BlcResult] -> Html
 blcsResultTable results = table ! class_ "result-table" $ do

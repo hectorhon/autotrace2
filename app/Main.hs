@@ -38,7 +38,7 @@ main = do
   connString <- openFile "connString.set" ReadMode >>= hGetLine
   connPool   <- runNoLoggingT $ createPostgresqlPool (pack connString) 1
   caching    <- initCaching PublicStaticCaching
-  qsem       <- newQSem 1
+  qsem       <- newQSem 100
   counter    <- newMVar 0
   srcFile    <- openFile "dataSource.set" ReadMode
   srcUrl     <- hGetLine srcFile
