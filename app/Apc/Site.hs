@@ -15,6 +15,7 @@ import AppM
 import Schema
 import Apc.API
 import Apc.Views
+import Apc.Links
 import Area.Links
 import Common.Responses
 
@@ -24,6 +25,11 @@ apcSite = toCreateApc
      :<|> viewApc
      :<|> updateApc
      :<|> deleteApc
+     :<|> toCreateApcCv
+     :<|> createApcCv
+     :<|> viewApcCv
+     :<|> updateApcCv
+     :<|> deleteApcCv
 
 toCreateApc :: Key Area -> AppM Html
 toCreateApc aid = do
@@ -44,9 +50,10 @@ viewApc pid aid = do
     Nothing -> lift (left err404)
     Just apc -> do
       mParent <- runDb $ selectFirst [AreaId ==. pid] []
+      cvs <- runDb $ selectList [CvApc ==. aid] []
       case mParent of
         Nothing -> lift (left err404)
-        Just parent -> return (apcIdPage apc parent)
+        Just parent -> return (apcIdPage apc parent cvs)
 
 updateApc :: Key Area -> Key Apc -> Apc -> AppM Text
 updateApc pid aid apc = do
@@ -57,5 +64,46 @@ updateApc pid aid apc = do
 
 deleteApc :: Key Area -> Key Apc -> AppM Text
 deleteApc pid aid = do
-  runDb $ deleteWhere [ApcArea ==. pid, ApcId ==. aid]
+  runDb $ deleteCascadeWhere [ApcArea ==. pid, ApcId ==. aid]
   return "deleted"
+
+toCreateApcCv :: Key Area -> Key Apc -> AppM Html
+toCreateApcCv aid apcId = do
+  mApc  <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  case mApc of
+    Nothing -> lift (left err404)
+    Just apc -> return (apcCvNewPage apc)
+
+createApcCv :: Key Area -> Key Apc -> Cv -> AppM Text
+createApcCv aid apcId cv = do
+  _ <- runDb (insert cv)
+  redirect (viewApcLink' aid apcId)
+  return undefined
+
+viewApcCv :: Key Area -> Key Apc -> Key Cv -> AppM Html
+viewApcCv aid apcId cid = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  case mApc of
+    Nothing -> lift (left err404)
+    Just apc -> do
+      mCv <- runDb $ selectFirst [CvApc ==. apcId, CvId ==. cid] []
+      case mCv of
+        Nothing -> lift (left err404)
+        Just cv -> return (apcCvIdPage cv apc)
+
+updateApcCv :: Key Area -> Key Apc -> Key Cv  -> Cv -> AppM Text
+updateApcCv aid apcId cid cv = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  if isNothing mApc then lift (left err404)
+  else do mCv <- runDb $ selectFirst [CvApc ==. apcId, CvId ==. cid] []
+          if isNothing mCv then lift (left err404)
+          else do runDb $ replace cid cv
+                  redirect (viewApcLink' aid apcId)
+                  return undefined
+
+deleteApcCv :: Key Area -> Key Apc -> Key Cv -> AppM Text
+deleteApcCv aid apcId cid = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  if isNothing mApc then lift (left err404)
+  else do runDb $ deleteCascadeWhere [CvApc ==. apcId, CvId ==. cid]
+          return "deleted"

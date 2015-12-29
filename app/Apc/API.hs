@@ -15,6 +15,11 @@ type ApcSite = ToCreateApc
           :<|> ViewApc
           :<|> UpdateApc
           :<|> DeleteApc
+          :<|> ToCreateApcCv
+          :<|> CreateApcCv
+          :<|> ViewApcCv
+          :<|> UpdateApcCv
+          :<|> DeleteApcCv
 
 type ToCreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
                    :> Get '[HTML] Html
@@ -33,5 +38,32 @@ type UpdateApc = "area" :> Capture "aid" (Key Area)
                  :> Post '[PlainText] Text
 
 type DeleteApc = "area" :> Capture "aid" (Key Area)
-               :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
-               :> Delete '[PlainText] Text
+                 :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
+                 :> Delete '[PlainText] Text
+
+type ToCreateApcCv = "area" :> Capture "aid" (Key Area)
+                     :> "apc" :> Capture "apcId" (Key Apc)
+                     :> "cv" :> "new"
+                     :> Get '[HTML] Html
+
+type CreateApcCv = "area" :> Capture "aid" (Key Area)
+                   :> "apc" :> Capture "apcId" (Key Apc)
+                   :> "cv" :> "new"
+                   :> ReqBody '[FormUrlEncoded] Cv
+                   :> Post '[PlainText] Text
+
+type ViewApcCv = "area" :> Capture "aid" (Key Area)
+                 :> "apc" :> Capture "apcId" (Key Apc)
+                 :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                 :> Get '[HTML] Html
+
+type UpdateApcCv = "area" :> Capture "aid" (Key Area)
+                   :> "apc" :> Capture "apcId" (Key Apc)
+                   :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                   :> ReqBody '[FormUrlEncoded] Cv
+                   :> Post '[PlainText] Text
+
+type DeleteApcCv = "area" :> Capture "aid" (Key Area)
+                   :> "apc" :> Capture "apcId" (Key Apc)
+                   :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                   :> Delete '[PlainText] Text
