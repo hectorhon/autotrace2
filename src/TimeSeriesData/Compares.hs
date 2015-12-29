@@ -1,11 +1,14 @@
-module TimeSeriesData.Compares where
+module TimeSeriesData.Compares
+  ( compares
+  ) where
 
 import Control.Exception (assert)
 import TimeSeriesData.Types
 import TimeSeriesData.Interpolate
 
 compares :: [TSPoint] -> [TSPoint] -> [(TSInterval, Maybe Ordering)]
-compares reds blacks = compares' (toSegments reds) (toSegments blacks)
+compares reds blacks = compress $
+  compares' (toSegments reds) (toSegments blacks)
   where toSegments [] = []
         toSegments ps = zip (init ps) (tail ps)
 
@@ -101,3 +104,18 @@ intersection ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4)) =
         s = ((1-t)*x3 + t*x4 - x1) / (x2-x1)
         x = (x2-x1)*s + x1
         y = (y2-y1)*s + y1
+
+compress :: [(TSInterval, Maybe Ordering)] -> [(TSInterval, Maybe Ordering)]
+compress [] = []
+compress (r:[]) = [r]
+compress (r:rs) = compress' r rs
+
+compress' :: (TSInterval, Maybe Ordering) -> [(TSInterval, Maybe Ordering)]
+          -> [(TSInterval, Maybe Ordering)]
+compress' r'@((start', end'), o') (r@((start, end), o):[])
+  | (end' == start && o' == o) = [((start', end), o)]
+  | otherwise                  = [r', r]
+compress' r'@((start', end'), o') (r@((start, end), o):rs)
+  | (end' == start && o' == o) = compress' ((start', end), o) rs
+  | otherwise                  = r' : compress' r rs
+compress' _ _ = assert False undefined
