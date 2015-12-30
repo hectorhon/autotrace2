@@ -118,7 +118,7 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
         td $ bar "orange" mvSat 100 ""
         td $ bar "orange" cvAffBySat 100 "")
 
-blcsResultTable :: [BlcResult] -> Html
+blcsResultTable :: [BlcResultSummary] -> Html
 blcsResultTable results = table ! class_ "result-table" $ do
   col ! class_ "result-table-col-1"
   col ! class_ "result-table-col-2"
@@ -138,7 +138,7 @@ blcsResultTable results = table ! class_ "result-table" $ do
     th "MV sat."
     th "CV aff. by sat."
   forM_ results
-    (\ (BlcResult (Entity bid blc) compliance quality
+    (\ (BlcResultSummary (Entity bid blc) compliance quality
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) -> tr $ do
       td $ a ! href (viewBlcLink (blcArea blc) bid) $ toHtml (blcName blc)
       td $ bar "lightgreen" compliance 100 ""

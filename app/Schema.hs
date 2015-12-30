@@ -47,11 +47,16 @@ share [ mkPersist sqlSettings,
       margin       Double
       calcMvICond  String
       calcSpICond  String
-    BlcInterval
-      blc          BlcId
-      start        UTCTime
-      end          UTCTime
-      category     MetricType
+    BlcResult
+      blc           BlcId
+      start         UTCTime
+      end           UTCTime  -- Add database constraint for desired granularity
+      demand        Double
+      uptimeDemand  Double
+      uptime        Double
+      performUptime Double
+      mvSat         Double
+      cvAffBySat    Double
     BlcEvent
       blc          BlcId
       time         UTCTime

@@ -112,7 +112,7 @@ toCalculateAreaBlcs aid mStart mEnd = do
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
 calculateAreaBlcs aid (start, end) = do
-  blcs <- runDb $ selectList [BlcArea ==. aid] []
+  blcs <- descendantBlcsOf' aid
   forM_ blcs (markCalculate (localDayToUTC start) (localDayToUTC end))
   redirect (viewAreaLink' aid)
   return undefined

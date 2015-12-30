@@ -4,11 +4,9 @@ module Blc.Calculate
 
 import TimeSeriesData
 import Database.Persist.Postgresql
-import qualified Database.Esqueleto as E
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Concurrent
-import Data.Maybe
 import Data.ByteString.Char8 (ByteString)
 import AppM
 import Config
@@ -35,12 +33,13 @@ calculateThread qsem counter calcOpts connStr (Entity kBlc blc) = do
   waitQSem qsem
   modifyMVar_ counter (return . (+) 1)
   -- Perform the calculations
-  (demand, uptimeDemand, uptime, performUptime, mvInterv, spInterv,
+  (demand, uptimeDemand, uptime, performUptime, modeInterv, mvInterv, spInterv,
    mvSat, cvAffBySat) <- (flip runReaderT) calcOpts $ do
     let filterCounts n = map fst . filter ((== n) . snd)
     demand   <- calcInterval (blcDemandCond blc)
     uptime   <- calcInterval (blcUptimeCond blc)
     let uptimeDemand = filterCounts 2 $ counts [demand, uptime]
+    let modeInterv = map fst (filterCounts 0 $ counts [uptime])
     perform  <- calcInterval $
       let margin  = show $ blcMargin blc
           measTag = blcMeasTag blc
@@ -63,30 +62,29 @@ calculateThread qsem counter calcOpts connStr (Entity kBlc blc) = do
                           , "[", outTag, "]<=", outMin ]
     let notPerform = filterCounts 2 $ counts [perform]
     let cvAffBySat = filterCounts 2 $ counts [notPerform, mvSat]
-    return (demand, uptimeDemand, uptime, performUptime,
+    return (demand, uptimeDemand, uptime, performUptime, modeInterv,
             mvInterv, spInterv, mvSat, cvAffBySat)
   -- Write to database
   let CalcOpts _ _ start end = calcOpts
-  let cleanRange' = cleanRange start end kBlc
-  let writeIntervals' = writeIntervals start end kBlc
   runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT (do
-    cleanRange' Demand
-    cleanRange' UptimeDemand
-    cleanRange' Uptime
-    cleanRange' PerformUptime
-    deleteWhere [ BlcEventTime>.start, BlcEventTime<=.end, BlcEventBlc==.kBlc ]
-    cleanRange' MvSat
-    cleanRange' CvAffBySat
-    writeIntervals' Demand demand
-    writeIntervals' UptimeDemand uptimeDemand
-    writeIntervals' Uptime uptime
-    writeIntervals' PerformUptime performUptime
+    deleteWhere [ BlcResultStart >=. start
+                , BlcResultStart <=. end
+                , BlcResultBlc   ==. kBlc ]
+    insert_ (BlcResult kBlc start end (durationOf demand)
+                                      (durationOf uptimeDemand)
+                                      (durationOf uptime)
+                                      (durationOf performUptime)
+                                      (durationOf mvSat)
+                                      (durationOf cvAffBySat))
+    deleteWhere [ BlcEventTime >.  start
+                , BlcEventTime <=. end
+                , BlcEventBlc  ==. kBlc ]
     forM_ mvInterv $
       (\t -> insert_ $ BlcEvent kBlc t MvInterv) . ((flip addUTCTime) refTime)
     forM_ spInterv $
       (\t -> insert_ $ BlcEvent kBlc t SpInterv) . ((flip addUTCTime) refTime)
-    writeIntervals' MvSat mvSat
-    writeIntervals' CvAffBySat cvAffBySat
+    forM_ modeInterv $
+      (\t -> insert_ $ BlcEvent kBlc t ModeInterv) . ((flip addUTCTime) refTime)
     )
   -- Release lock
   modifyMVar_ counter (return . (flip (-)) 1)
@@ -106,66 +104,6 @@ calcChange tagName intervals = do
     tsPoints <- lift $ getTSPoints src port start end tagName
     return (changesIn tsPoints intervals)
 
-cleanRange :: UTCTime -> UTCTime -> Key Blc -> MetricType -> SqlPersistT IO ()
-cleanRange start end kBlc metricType = do
-  -- Between start and end
-  deleteWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalStart    >=. start
-              , BlcIntervalEnd      <=. end ]
-  -- Overlap start
-  updateWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalEnd      >.  start
-              , BlcIntervalEnd      <=. end ]
-              [ BlcIntervalEnd      =.  start ]
-  -- Overlap end
-  updateWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalStart    >=. start
-              , BlcIntervalStart    <.  end ]
-              [ BlcIntervalStart    =.  end ]
-  -- Overlap both start and end
-  exceedRanges <- selectList [ BlcIntervalBlc      ==. kBlc
-                             , BlcIntervalCategory ==. metricType
-                             , BlcIntervalStart    <.  start
-                             , BlcIntervalEnd      >.  end ] []
-  forM_ exceedRanges (\ (Entity kr r) -> do
-    update kr [ BlcIntervalEnd =. start ]
-    insert_ $ BlcInterval (blcIntervalBlc r) end (blcIntervalEnd r) metricType)
-
-writeIntervals :: UTCTime -> UTCTime -> Key Blc -> MetricType -> [TSInterval]
-               -> SqlPersistT IO ()
-writeIntervals start end kBlc metricType intervals =
-  forM_ (fmap g intervals) f where
-    g (s, e) = ( max (addUTCTime s refTime) start
-               , min (addUTCTime e refTime) end   )
-    insert_' s e = insert_ $ BlcInterval kBlc s e metricType
-    f (s, e)
-      | s == start && e < end = do
-        numAffected <- E.updateCount $ \ u -> do
-          E.set u [ BlcIntervalEnd E.=. E.val e ]
-          E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                     E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                     E.&&. (u E.^. BlcIntervalEnd)      E.==. E.val start )
-        when (numAffected == 0) (insert_' s e)
-      | e == end && s > start = do
-        numAffected <- E.updateCount $ \ u -> do
-          E.set u [ BlcIntervalStart E.=. E.val s ]
-          E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                     E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                     E.&&. (u E.^. BlcIntervalStart)    E.==. E.val end )
-        when (numAffected == 0) (insert_' s e)
-      | s == start && e == end = do
-          atEnd <- selectFirst [ BlcIntervalBlc      ==. kBlc
-                               , BlcIntervalCategory ==. metricType
-                               , BlcIntervalStart    ==. end ] []
-          let latestE = maybe e (blcIntervalEnd . entityVal) atEnd
-          when (isJust atEnd) (delete $ entityKey $ fromJust atEnd)
-          numAffected <- E.updateCount $ \ u -> do
-            E.set u [ BlcIntervalEnd E.=. E.val latestE ]
-            E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                       E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                       E.&&. (u E.^. BlcIntervalEnd)      E.==. E.val start )
-          when (numAffected == 0) (insert_' s latestE)
-      | otherwise = insert_' s e
+durationOf :: [TSInterval] -> Double
+durationOf = realToFrac . foldr ((+) . f) 0
+  where f (start, end) = end - start
