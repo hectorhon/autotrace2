@@ -40,6 +40,19 @@ toCalculateApcDefaultDayLink aid apcId = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCalculateApc') aid apcId)
 
 
+
+viewApcPerformanceLink :: Key Area -> Key Apc -> Day -> Day
+                       -> AttributeValue
+viewApcPerformanceLink aid apcId start end = stringValue $
+  "/"
+  ++ show (linkTo (Proxy :: Proxy ViewApcPerformance) aid apcId start end)
+
+viewApcPerformanceDefaultDayLink :: Key Area -> Key Apc -> AttributeValue
+viewApcPerformanceDefaultDayLink aid apcId = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewApcPerformance') aid apcId)
+
+
+
 viewApcCvLink' :: Key Area -> Key Apc -> Key Cv -> String
 viewApcCvLink' aid apcId cid =
   "/" ++ show (linkTo (Proxy :: Proxy ViewApcCv) aid apcId cid)

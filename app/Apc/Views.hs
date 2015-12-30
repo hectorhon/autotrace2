@@ -52,7 +52,7 @@ apcPerformancePage :: Entity Apc -> UTCTime -> UTCTime
 apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
   layout "Apc performance" $ do
   h1 $ toHtml (apcName apc)
-  apcNavigation (apcArea apc) aid 2
+  apcNavigation (apcArea apc) aid 3
   H.form ! class_ "line-form" ! method "get" $ do
     H.label $ do
       H.span "Start"
@@ -61,7 +61,9 @@ apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
       H.span "End"
       datepicker "end-field" "end" (formatDay end)
     button "Refresh"
-    a "Recalculate"
+    a ! href (toCalculateApcLink
+              (apcArea apc) aid (utcToLocalDay start) (utcToLocalDay end))
+      $ "Recalculate"
   h2 ! Ha.style "text-align:center;" $ "Uptime"
   H.div ! Ha.id "summary" $ ""
   timeScale start end
@@ -71,7 +73,6 @@ apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
   h2 ! Ha.style "text-align:center;" $ "CV constraints"
   timeScale start end
   H.div ! Ha.id "cv-exceeds" $ ""
-  a ! href (toCreateApcCvLink (apcArea apc) aid) $ "New CV"
   script $ toHtml $ L.unpack $
     L.concat [ "var start = new Date('", encode start, "');"
              , "var end = new Date('", encode end, "');"
@@ -80,20 +81,18 @@ apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
              , "var cvs = ", (encode cvs), ";"
              , "var cvExceeds = ", (encode cvExceeds), ";"   ]
   script ! src "/apc.js" $ ""
-  where timeScale start end = table ! class_ "time-scale" $ tr $
-          forM_ (splitByHours 6 start end)
-                (\ (t, _) -> td $ toHtml $ formatShort t)
-        splitByHours pieces start' end' =
-          let start = toUnix start'
-              end = toUnix end'
-              l = start - mod (start + offset*60) 86400
-              r = end + (case mod (end + offset*60) 86400 of 0 -> 0
-                                                             t -> 86400 - t)
+  where timeScale s e =
+          table ! class_ "time-scale" $ tr $
+            forM_ (splitByHours 6 s e) (\ (t, _) -> td $ toHtml $ formatShort t)
+        splitByHours pieces s e =
+          let l = (toUnix s) - mod ((toUnix s) + offset*60) 86400
+              t = mod ((toUnix e) + offset*60) 86400
+              r = (toUnix e) + (if t /= 0 then 86400 - t else 0)
               pieceSize = Prelude.div (r - l) pieces
               startTimes = map (\ n -> l + (n-1)*pieceSize) [1..pieces]
               endTimes = map (\ n -> l + n*pieceSize) [1..pieces]
-          in map (\ (s, e) -> (fromUnix $ fromIntegral s,
-                               fromUnix $ fromIntegral e )) $
+          in map (\ (s', e') -> (fromUnix $ fromIntegral s',
+                                 fromUnix $ fromIntegral e' )) $
              zip startTimes endTimes
         toUnix t = round $ diffUTCTime t refTime
         fromUnix t = addUTCTime t refTime
@@ -103,6 +102,7 @@ apcNavigation :: Key Area -> Key Apc -> Int -> Html
 apcNavigation aid apcId = navigation
   [ ("Definition", viewApcLink aid apcId)
   , ("Calculate", toCalculateApcDefaultDayLink aid apcId)
+  , ("Performance", viewApcPerformanceDefaultDayLink aid apcId)
   ]
 
 apcCvNewPage :: Entity Apc -> Html

@@ -18,6 +18,7 @@ import Time
 import Apc.API
 import Apc.Views
 import Apc.Links
+import Apc.Calculate
 import Area.Links
 import Common.Responses
 
@@ -28,6 +29,7 @@ apcSite = toCreateApc
      :<|> updateApc
      :<|> deleteApc
      :<|> toCalculateApc
+     :<|> calculateApc
      :<|> viewApcPerformance
 
      :<|> toCreateApcCv
@@ -81,6 +83,14 @@ toCalculateApc aid apcId mStart mEnd = do
       start <- maybe (liftIO $ relativeDay (-1)) (return . localDayToUTC) mStart
       end   <- maybe (liftIO $ relativeDay 0) (return . localDayToUTC) mEnd
       return (apcCalculatePage start end apc)
+
+calculateApc :: Key Area -> Key Apc -> (Day, Day) -> AppM Text
+calculateApc aid apcId (start, end) = do
+  runDb (selectFirst [ApcArea ==. aid, ApcId ==. apcId] [])
+  >>= maybe (lift $ left err404)
+            (markCalculate (localDayToUTC start) (localDayToUTC end))
+  >> redirect (viewApcLink' aid apcId)
+  >> return undefined
 
 viewApcPerformance :: Key Area -> Key Apc -> Maybe Day -> Maybe Day -> AppM Html
 viewApcPerformance aid apcId mStart mEnd = do

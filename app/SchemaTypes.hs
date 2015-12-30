@@ -15,7 +15,9 @@ data MetricType = Demand
                 | Uptime
                 | PerformUptime
                 | MvSat
-                | CvAffBySat deriving (Generic, Show, Read, Eq)
+                | CvAffBySat
+                | Exceed
+                deriving (Generic, Show, Read, Eq)
 derivePersistField "MetricType"
 
 instance ToJSON MetricType

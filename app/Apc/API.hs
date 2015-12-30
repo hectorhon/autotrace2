@@ -17,6 +17,7 @@ type ApcSite = ToCreateApc
           :<|> UpdateApc
           :<|> DeleteApc
           :<|> ToCalculateApc
+          :<|> CalculateApc
           :<|> ViewApcPerformance
 
           :<|> ToCreateApcCv
@@ -54,9 +55,18 @@ type ToCalculateApc' = "area" :> Capture "aid" (Key Area)
                        :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
                        :> Get '[HTML] Html
 
+type CalculateApc = "area" :> Capture "aid" (Key Area)
+                    :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
+                    :> ReqBody '[FormUrlEncoded] (Day, Day)
+                    :> Post '[PlainText] Text
+
 type ViewApcPerformance = "area" :> Capture "aid" (Key Area)
                           :> "apc" :> Capture "apcId" (Key Apc) :> "performance"
                           :> QueryParam "start" Day :> QueryParam "end" Day
+                          :> Get '[HTML] Html
+
+type ViewApcPerformance' = "area" :> Capture "aid" (Key Area)
+                          :> "apc" :> Capture "apcId" (Key Apc) :> "performance"
                           :> Get '[HTML] Html
 
 
