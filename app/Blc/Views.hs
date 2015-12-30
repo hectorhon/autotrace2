@@ -176,5 +176,6 @@ blcForm (Entity pid parent) mBlc = H.form ! method "post" $ do
   field       "Calc. MV interv. when" "calcmvicond" blcCalcMvICond   mBlc
   field       "Calc. SP interv. when" "calcspicond" blcCalcSpICond   mBlc
   button "Save"
-  maybe (cancelButton "blc-cancel-button")
+  maybe (return ())
         (deleteButton "blc-delete-button" . viewAreaLink' . blcArea) mBlc
+  cancelButton "blc-cancel-button"

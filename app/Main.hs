@@ -21,6 +21,7 @@ import Common.Views (homePage)
 import Area.Site
 import Blc.Site
 import Apc.Site
+import Apc.Issue.Site
 
 server :: ServerT Site AppM
 server = (runDb (runMigration migrateAll) >> return "migrate requested")
@@ -28,6 +29,7 @@ server = (runDb (runMigration migrateAll) >> return "migrate requested")
     :<|> areaSite
     :<|> blcSite
     :<|> apcSite
+    :<|> apcIssueSite
 
 readerServer :: Config -> Server Site
 readerServer cfg = enter (readerToEither cfg) server

@@ -5,6 +5,7 @@ module TimeSeriesData.Types where
 import Data.Time
 import Data.Text
 import Data.Attoparsec.Text
+import Data.Aeson
 
 data TSValue = Continuous Double
              | Discrete String
@@ -13,6 +14,12 @@ data TSValue = Continuous Double
 data TSPoint = TSPoint { timeOf  :: NominalDiffTime
                        , valueOf :: TSValue }
                deriving Show
+
+instance ToJSON TSPoint where
+  toJSON (TSPoint t (Continuous y)) = object [ "t" .= (realToFrac t :: Double)
+                                             , "v" .= y ]
+  toJSON (TSPoint t (Discrete   s)) = object [ "t" .= (realToFrac t :: Double)
+                                             , "v" .= s ]
 
 type TSSegment = (TSPoint, TSPoint)
 

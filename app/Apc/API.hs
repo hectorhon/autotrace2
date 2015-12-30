@@ -14,6 +14,7 @@ import Schema
 type ApcSite = ToCreateApc
           :<|> CreateApc
           :<|> ViewApc
+          :<|> ViewApcs
           :<|> UpdateApc
           :<|> DeleteApc
           :<|> ToCalculateApc
@@ -25,6 +26,7 @@ type ApcSite = ToCreateApc
           :<|> ViewApcCv
           :<|> UpdateApcCv
           :<|> DeleteApcCv
+          :<|> ViewApcCvTrend
 
 type ToCreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
                    :> Get '[HTML] Html
@@ -36,6 +38,9 @@ type CreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
 type ViewApc = "area" :> Capture "aid" (Key Area)
                :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
                :> Get '[HTML] Html
+
+type ViewApcs = "apc"
+                :> Get '[HTML] Html
 
 type UpdateApc = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
@@ -97,3 +102,14 @@ type DeleteApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> Capture "cid" (Key Cv) :> "definition"
                    :> Delete '[PlainText] Text
+
+type ViewApcCvTrend = "area" :> Capture "aid" (Key Area)
+                      :> "apc" :> Capture "apcId" (Key Apc)
+                      :> "cv" :> Capture "cid" (Key Cv) :> "trend"
+                      :> QueryParam "start" Day :> QueryParam "end" Day
+                      :> Get '[HTML] Html
+
+type ViewApcCvTrend' = "area" :> Capture "aid" (Key Area)
+                       :> "apc" :> Capture "apcId" (Key Apc)
+                       :> "cv" :> Capture "cid" (Key Cv) :> "trend"
+                       :> Get '[HTML] Html

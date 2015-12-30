@@ -18,7 +18,8 @@ areaHomePage areas = layout "Site list" $ do
   h1 "Select a plant"
   ul $ do
     forM_ areas (\ (Entity aid area) ->
-      li $ a ! href (viewAreaLink aid) $ toHtml (areaName area))
+      li $ a ! href (viewBlcsPerformanceDefaultDayLink aid)
+             $ toHtml (areaName area))
     li $ a ! href toCreateTopAreaLink $ "New plant..."
 
 areaNewPage :: Maybe (Entity Area) -> Html

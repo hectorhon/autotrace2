@@ -33,7 +33,7 @@ issues.forEach(function(issue) {
             "width": issue.eDuration / duration * 100 + "%",
             "margin-left": (issue.eStart - start) / duration * 100 + "%"
         }).click(function() {
-            window.location.href = "../issues/" + issue.id;
+            window.location.href = "issue/" + issue.id + "/overview";
         })
     );
 });
@@ -244,5 +244,5 @@ row.append("text")
 
 $(".cv-exceed").click(function(e) {
     var id = $(e.currentTarget).attr("data-cvid");
-    window.location.href = "cv/" + id + "/chart";
+    window.location.href = "cv/" + id + "/trend";
 });

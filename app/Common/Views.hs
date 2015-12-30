@@ -6,10 +6,11 @@
 
 module Common.Views where
 
-import Text.Blaze.Html5 as H
+import Text.Blaze.Html5 as H hiding (i)
 import Text.Blaze.Html5.Attributes as Ha
 import Control.Monad (forM_)
 import Area.Links
+import Apc.Links
 
 layout :: String -> Html -> Html
 layout pageTitle pageContents = docTypeHtml $ do
@@ -33,7 +34,8 @@ banner = H.div ! class_ "banner" $ do
 
 homePage :: Html
 homePage = layout "Home" $ do
-  p $ a ! href viewAreasLink $ "Browse by location"
+  p $ a ! href viewAreasLink $ "Browse base layer controllers"
+  p $ a ! href viewApcsLink $ "Browse APCs"
 
 class ToString a where
   toString :: a -> String
@@ -41,11 +43,46 @@ instance ToString String where
   toString = Prelude.id
 instance Show a => ToString a where
   toString = show
+
 field :: ToString b => String -> String -> (a -> b) -> Maybe a -> Html
 field fieldLabel fieldName accessor mRecord = H.label $ do
   H.span (toHtml fieldLabel)
   input ! Ha.name (stringValue fieldName)
         ! Ha.value (stringValue $ maybe "" (toString . accessor) mRecord)
+
+-- |The field' function additionally accepts id and class
+field' :: ToString b
+       => String -> String -> Maybe String -> Maybe String
+       -> (a -> b) -> Maybe a -> Html
+field' fieldLabel fieldName mFieldId mFieldClass accessor mRecord = H.label $ do
+  H.span (toHtml fieldLabel)
+  let f = case mFieldId of
+            Nothing -> Prelude.id
+            Just fieldId -> \ i -> i ! Ha.id (stringValue fieldId)
+  let g = case mFieldClass of
+            Nothing -> Prelude.id
+            Just fieldClass -> \ i -> i ! Ha.class_ (stringValue fieldClass)
+  f . g $
+    input ! Ha.name (stringValue fieldName)
+          ! Ha.value (stringValue $ maybe "" (toString . accessor) mRecord)
+
+-- |The largeField' function is a textarea and additionally accepts id and class
+largeField' :: ToString b
+            => String -> String -> Maybe String -> Maybe String
+            -> (a -> b) -> Maybe a -> Html
+largeField' fieldLabel fieldName mFieldId mFieldClass accessor mRecord =
+  H.label $ do
+    H.span (toHtml fieldLabel)
+    let f = case mFieldId of
+              Nothing -> Prelude.id
+              Just fieldId -> \ i -> i ! Ha.id (stringValue fieldId)
+    let g = case mFieldClass of
+              Nothing -> Prelude.id
+              Just fieldClass -> \ i -> i ! Ha.class_ (stringValue fieldClass)
+    f . g $
+      textarea ! Ha.name (stringValue fieldName)
+               ! Ha.rows "4"
+               $ toHtml $ maybe "" (toString . accessor) mRecord
 
 linkField :: String -> String -> AttributeValue-> Html
 linkField fieldLabel displayText url = H.label $ do

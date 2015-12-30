@@ -25,6 +25,12 @@ viewApcLink aid bid = stringValue $ viewApcLink' aid bid
 
 
 
+viewApcsLink :: AttributeValue
+viewApcsLink = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewApcs))
+
+
+
 toCreateApcCvLink :: Key Area -> Key Apc -> AttributeValue
 toCreateApcCvLink aid apcId = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCreateApcCv) aid apcId)
@@ -59,3 +65,14 @@ viewApcCvLink' aid apcId cid =
 
 viewApcCvLink :: Key Area -> Key Apc -> Key Cv -> AttributeValue
 viewApcCvLink aid apcId cid = stringValue $ viewApcCvLink' aid apcId cid
+
+
+
+viewApcCvTrendLink :: Key Area -> Key Apc -> Key Cv -> Day -> Day
+                   -> AttributeValue
+viewApcCvTrendLink aid apcId cid start end = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewApcCvTrend) aid apcId cid start end)
+
+viewApcCvTrendDefaultDayLink :: Key Area -> Key Apc -> Key Cv -> AttributeValue
+viewApcCvTrendDefaultDayLink aid apcId cid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewApcCvTrend') aid apcId cid)

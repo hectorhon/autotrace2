@@ -10,9 +10,11 @@ import Data.Text (Text)
 import Area.API
 import Blc.API
 import Apc.API
+import Apc.Issue.API
 
 type Site = "migrate" :> Post '[PlainText] Text
        :<|> Get '[HTML] Html
        :<|> AreaSite
        :<|> BlcSite
        :<|> ApcSite
+       :<|> ApcIssueSite

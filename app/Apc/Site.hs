@@ -8,11 +8,12 @@ import Servant
 import Text.Blaze.Html5 hiding (area, i, a)
 import Database.Persist.Postgresql
 import qualified Database.Esqueleto as E
-import Control.Monad.Trans (lift, liftIO)
+import Control.Monad.Reader
 import Control.Monad.Trans.Either
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import AppM
+import Config
 import Schema
 import Time
 import Apc.API
@@ -21,11 +22,13 @@ import Apc.Links
 import Apc.Calculate
 import Area.Links
 import Common.Responses
+import TimeSeriesData (getTSData)
 
 apcSite :: ServerT ApcSite AppM
 apcSite = toCreateApc
      :<|> createApc
      :<|> viewApc
+     :<|> viewApcs
      :<|> updateApc
      :<|> deleteApc
      :<|> toCalculateApc
@@ -37,6 +40,7 @@ apcSite = toCreateApc
      :<|> viewApcCv
      :<|> updateApcCv
      :<|> deleteApcCv
+     :<|> viewApcCvTrend
 
 toCreateApc :: Key Area -> AppM Html
 toCreateApc aid = do
@@ -61,6 +65,9 @@ viewApc pid aid = do
       case mParent of
         Nothing -> lift (left err404)
         Just parent -> return (apcIdPage apc parent cvs)
+
+viewApcs :: AppM Html
+viewApcs = runDb $ selectList [] [] >>= return . apcsPage
 
 updateApc :: Key Area -> Key Apc -> Apc -> AppM Text
 updateApc pid aid apc = do
@@ -168,3 +175,24 @@ deleteApcCv aid apcId cid = do
   if isNothing mApc then lift (left err404)
   else do runDb $ deleteCascadeWhere [CvApc ==. apcId, CvId ==. cid]
           return "deleted"
+
+viewApcCvTrend :: Key Area -> Key Apc -> Key Cv -> Maybe Day -> Maybe Day
+               -> AppM Html
+viewApcCvTrend aid apcId cid mStart mEnd = do
+  mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
+  case mApc of
+    Nothing -> lift (left err404)
+    Just apc -> do
+      mCv <- runDb $ selectFirst [CvApc ==. apcId, CvId ==. cid] []
+      case mCv of
+        Nothing -> lift (left err404)
+        Just ecv@(Entity _ cv) -> do
+          start  <- maybe (liftIO $ relativeDay (-1))
+                          (return . localDayToUTC) mStart
+          end    <- maybe (liftIO $ relativeDay 0)
+                          (return . localDayToUTC) mEnd
+          src    <- asks getSrcUrl
+          port   <- asks getSrcPort
+          let tags = [ cvSrlTag cv, cvMeasTag cv, cvSrhTag cv ]
+          tsData <- liftIO (getTSData src port tags start end)
+          return (apcCvTrendPage ecv apc tsData)

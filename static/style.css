@@ -77,6 +77,8 @@ label {
 label span {
     display: inline-block;
     width: 10em;
+    margin: 10px 0 0 0;
+    vertical-align: top;
 }
 
 .line-form {
@@ -98,7 +100,7 @@ label span {
     margin: 0 2em;
 }
 
-input {
+input, textarea {
     font-family: 'OpenSans';
     border: 1px solid lightblue;
     font-size: 1.1em;
@@ -107,12 +109,21 @@ input {
     width: 20em;
 }
 
-input:focus {
+textarea {
+    resize: none;
+}
+
+input[type=checkbox] {
+    border: none;
+    margin-top: 10px;
+}
+
+input:focus, textarea:focus {
     border: 1px solid blue;
 }
 
 .input-link {
-    margin: 0 1em;
+    margin: 10px 1em 0 1em;
     padding: 0px 12px;
     display: inline-block;
 }
@@ -206,6 +217,30 @@ button:hover {
     fill: green;
     font-size: 10px;
 }
+
+
+
+.issues-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.issues-table td, .issues-table th {
+    text-align: center;
+    padding: 2px;
+}
+
+.issues-table tr:nth-child(even) { background: white; }
+.issues-table tr:nth-child(odd)  { background: aliceblue; }
+
+.issues-table-col-1 { width: 5%; }
+.issues-table-col-2 { width: 16%; }
+.issues-table-col-3 { width: 16%; }
+.issues-table-col-4 { width: 16%; }
+.issues-table-col-5 { width: 40%; }
+.issues-table-col-6 { width: 7%; }
+
+
 
 .result-table {
     table-layout: fixed;

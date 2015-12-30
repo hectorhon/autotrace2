@@ -7,12 +7,15 @@ import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
 import Control.Monad (forM_)
 import Data.Aeson
+import Data.HashMap.Strict (fromList)
 import qualified Data.ByteString.Lazy.Char8 as L (unpack, concat)
 import Common.Views
 import Area.Links
 import Apc.Links
+import Apc.Issue.Links
 import Schema
 import Time
+import TimeSeriesData
 
 apcNewPage :: Entity Area -> Html
 apcNewPage parent = layout "New advanced process controller" $ do
@@ -29,6 +32,17 @@ apcIdPage (Entity aid apc) parent cvs = layout (apcName apc) $ do
     forM_ cvs (\ (Entity cid cv) -> li $
       a ! href (viewApcCvLink (apcArea apc) aid cid) $ toHtml (cvName cv))
     li $ a ! href (toCreateApcCvLink (apcArea apc) aid) $ "New CV..."
+
+apcsPage :: [Entity Apc] -> Html
+apcsPage apcs = layout "APC list" $ do
+  h1 "Select an APC"
+  ul $ do
+    forM_ apcs (\ (Entity aid apc) -> li $
+      a ! href (viewApcLink (apcArea apc) aid) $ toHtml (apcName apc))
+  p $ do
+    H.span "To create a new APC, select the specific area "
+    a ! href viewAreasLink $ "here"
+    H.span "."
 
 apcCalculatePage :: UTCTime -> UTCTime -> Entity Apc -> Html
 apcCalculatePage start end (Entity aid apc) =
@@ -69,7 +83,6 @@ apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
   timeScale start end
   H.div ! Ha.id "uptimes" $ ""
   H.div ! Ha.id "issues" $ ""
-  a "New issue"
   h2 ! Ha.style "text-align:center;" $ "CV constraints"
   timeScale start end
   H.div ! Ha.id "cv-exceeds" $ ""
@@ -103,6 +116,7 @@ apcNavigation aid apcId = navigation
   [ ("Definition", viewApcLink aid apcId)
   , ("Calculate", toCalculateApcDefaultDayLink aid apcId)
   , ("Performance", viewApcPerformanceDefaultDayLink aid apcId)
+  , ("Issues", viewApcIssuesLink aid apcId)
   ]
 
 apcCvNewPage :: Entity Apc -> Html
@@ -116,20 +130,42 @@ apcCvIdPage (Entity cid cv) apc = layout (cvName cv) $ do
   cvNavigation (apcArea $ entityVal apc) (entityKey apc) cid 1
   apcCvForm apc (Just cv)
 
+apcCvTrendPage :: Entity Cv -> Entity Apc -> TSData -> Html
+apcCvTrendPage (Entity cid cv) (Entity aid apc) (TSData startN endN tsData) =
+  layout (cvName cv) $ do
+    h1 $ toHtml (cvName cv)
+    cvNavigation (apcArea apc) aid cid 2
+    H.div ! Ha.id "chart" $ ""
+    let startDay = utcToLocalDay $ addUTCTime startN refTime
+    let endDay = utcToLocalDay $ addUTCTime endN refTime
+    a ! href (viewApcPerformanceLink (apcArea apc) aid startDay endDay)
+      $ "Back to APC performance"
+    script $ toHtml $
+      "var data = " ++ (L.unpack $ encode (fromList tsData)) ++ ";"
+    script $ toHtml $ "var start = "
+                      ++ (L.unpack $ encode (realToFrac startN :: Double))
+                      ++ ";"
+    script $ toHtml $ "var end = "
+                      ++ (L.unpack $ encode (realToFrac endN :: Double))
+                      ++ ";"
+    script ! src "/cvChart.js" $ ""
+
 cvNavigation :: Key Area -> Key Apc -> Key Cv -> Int -> Html
 cvNavigation aid apcId cid = navigation
   [ ("Definition", viewApcCvLink aid apcId cid)
+  , ("Trend", viewApcCvTrendDefaultDayLink aid apcId cid)
   ]
 
 apcForm :: Entity Area -> Maybe Apc -> Html
 apcForm (Entity pid parent) mApc = H.form ! method "post" $ do
   field       "Name"                  "name"        apcName          mApc
+  field       "Uptime condition"      "uptimecond"  apcUptimeCond    mApc
   linkField   "Parent" (areaName parent) (viewAreaLink pid)
   hiddenField "area" (show $ fromSqlKey pid)
-  field       "Uptime condition"      "uptimecond"  apcUptimeCond    mApc
   button "Save"
-  maybe (cancelButton "apc-cancel-button")
+  maybe (return ())
         (deleteButton "apc-delete-button" . viewAreaLink' . apcArea) mApc
+  cancelButton "apc-cancel-button"
 
 apcCvForm :: Entity Apc -> Maybe Cv -> Html
 apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
@@ -142,7 +178,7 @@ apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
   field "Prediction tag"     "predtag" cvPredTag mCv
   field "Selected tag"       "seltag"  cvSelTag  mCv
   button "Save"
-  maybe (cancelButton "apc-cv-cancel-button")
+  maybe (return ())
         (deleteButton "apc-cv-delete-button"
-        . viewApcLink' (apcArea apc) . cvApc)
-        mCv
+        . viewApcLink' (apcArea apc) . cvApc) mCv
+  cancelButton "apc-cv-cancel-button"

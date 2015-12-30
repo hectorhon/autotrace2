@@ -18,7 +18,7 @@ import Database.Persist.TH
 import Database.Persist.Postgresql
 import Servant
 import Control.Monad.Except
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, isJust)
 import Data.Text (Text, unpack, pack)
 import Data.Text.Read (Reader, decimal, double)
 import SchemaTypes
@@ -213,3 +213,39 @@ instance FromFormUrlEncoded Cv where
                      (return . unpack)
                      (lookup "seltag" params)
     return (Cv name apc measTag srhTag srlTag predTag selTag)
+
+instance FromFormUrlEncoded ApcIssue where
+  fromFormUrlEncoded params = runExcept $ do
+    apcId          <- maybe (throwError "Missing or invalid apc")
+                            (return)
+                            (lookup "apc" params >>= fromText)
+    startDay       <- maybe (throwError "Missing start day")
+                            (maybe (throwError "Failed to parse start day")
+                                   return
+                             . parseDay . unpack)
+                            (lookup "startday" params)
+    startTime      <- maybe (throwError "Missing start time")
+                            (maybe (throwError "Failed to parse start time")
+                                   return
+                             . parseClock . unpack)
+                            (lookup "starttime" params)
+    endDay         <- maybe (throwError "Missing end day")
+                              (maybe (throwError "Failed to parse end day")
+                                     return
+                               . parseDay . unpack)
+                              (lookup "endday" params)
+    endTime        <- maybe (throwError "Missing end time")
+                            (maybe (throwError "Failed to parse end time")
+                                   return
+                             . parseClock . unpack)
+                            (lookup "endtime" params)
+    category       <- maybe (throwError "Missing category")
+                            (return . unpack)
+                            (lookup "category" params)
+    description    <- maybe (throwError "Missing description")
+                            (return . unpack)
+                            (lookup "description" params)
+    discountUptime <- return $ isJust (lookup "discountuptime" params)
+    let start      =  localTimeToUTC tz (LocalTime startDay startTime)
+    let end        =  localTimeToUTC tz (LocalTime endDay endTime)
+    return (ApcIssue apcId start end category description discountUptime)
