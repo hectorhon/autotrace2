@@ -67,7 +67,7 @@ viewApc pid aid = do
         Just parent -> return (apcIdPage apc parent cvs)
 
 viewApcs :: AppM Html
-viewApcs = runDb $ selectList [] [] >>= return . apcsPage
+viewApcs = runDb $ selectList [] [Asc ApcName] >>= return . apcsPage
 
 updateApc :: Key Area -> Key Apc -> Apc -> AppM Text
 updateApc pid aid apc = do
