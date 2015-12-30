@@ -66,9 +66,8 @@ formatClock = formatTime defaultTimeLocale "%R" . utcToLocalTime tz
 -- * Relative time
 
 relativeDay :: Integer -> IO UTCTime
-relativeDay offset = do
-  UTCTime day _ <- getCurrentTime
-  return $ UTCTime (addDays offset day) 0
+relativeDay offset = getCurrentTime
+  >>= return . localDayToUTC . addDays offset . utcToLocalDay
 
 localDayToUTC :: Day -> UTCTime
 localDayToUTC = localTimeToUTC tz . (flip LocalTime) midnight
