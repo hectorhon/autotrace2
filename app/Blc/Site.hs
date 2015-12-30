@@ -5,7 +5,7 @@
 module Blc.Site where
 
 import Servant
-import Text.Blaze.Html5 hiding (area)
+import Text.Blaze.Html5 hiding (area, map)
 import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
@@ -113,6 +113,11 @@ toCalculateAreaBlcs aid mStart mEnd = do
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
 calculateAreaBlcs aid (start, end) = do
   blcs <- descendantBlcsOf' aid
-  forM_ blcs (markCalculate (localDayToUTC start) (localDayToUTC end))
+  let days = map localDayToUTC [start..end]
+  let days' = zip (init days) (tail days)
+  let args = do blc <- blcs
+                se  <- days'
+                return (blc, se)
+  forM_ args (\ (blc, (s, e)) -> markCalculate s e blc)
   redirect (viewAreaLink' aid)
   return undefined
