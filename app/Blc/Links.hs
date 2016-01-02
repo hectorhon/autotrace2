@@ -37,6 +37,15 @@ viewBlcsPerformanceDefaultDayLink aid = stringValue $
 
 
 
+viewBlcBadActorsLink :: Key Area -> Day -> Day -> Double -> Double
+                     -> AttributeValue
+viewBlcBadActorsLink aid start end complianceTargetPct qualityTargetPct =
+  stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewBlcBadActors)
+                      aid start end complianceTargetPct qualityTargetPct)
+
+
+
 toCalculateAreaBlcsLink :: Key Area -> Day -> Day -> AttributeValue
 toCalculateAreaBlcsLink aid start end = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCalculateAreaBlcs) aid start end)

@@ -3,6 +3,8 @@
 module Blc.Queries.BlcResult 
   ( BlcResult (BlcResult)
   , getChildBlcResult
+  , getCompliances
+  , getQualities
   ) where
 
 import Database.Esqueleto
@@ -25,36 +27,56 @@ data BlcResult =
 
 getChildBlcResult :: UTCTime -> UTCTime -> Key Area -> AppM [BlcResult]
 getChildBlcResult start end aid =
-  let d (k1, n1) (k2, n2) = assert (k1 == k2) (if n2 /= 0 then n1 / n2 else 1)
-      totalDuration = diffUTCTime end start
+  let totalDuration = diffUTCTime end start
   in do
     blcs <- runDb $ select $ from $ \ i -> do
       where_ (i ^. BlcArea ==. val aid)
       return i
     let bids = map entityKey blcs
-    uptimeDemands <- durations start end bids UptimeDemand
-    demands <- durations start end bids Demand
-    performUptimes <- durations start end bids PerformUptime
-    uptimes <- durations start end bids Uptime
-    let compliances = map realToFrac $
-                      assert (length uptimeDemands == length demands) $
-                      zipWith d uptimeDemands demands
-    let qualities = map realToFrac $
-                    assert (length performUptimes == length uptimes) $
-                    zipWith d performUptimes uptimes
+    compliances <- getCompliances start end bids
+    qualities <- getQualities start end bids
     modeInterv <- getModeInterv start end bids
     mvInterv <- numEvents start end bids MvInterv
     spInterv <- numEvents start end bids SpInterv
     mvSat <- durations start end bids MvSat
     cvAffBySat <- durations start end bids CvAffBySat
-    let mvSat' = zipWith (/) (map snd mvSat) (repeat totalDuration)
-    let cvAffBySat' = zipWith (/) (map snd cvAffBySat) (repeat totalDuration)
-    return $ zipWith8 BlcResult blcs compliances qualities
-                                (map snd modeInterv)
-                                (map snd mvInterv)
-                                (map snd spInterv)
-                                (map realToFrac mvSat')
-                                (map realToFrac cvAffBySat')
+    let dv (k1, n1) n = (k1, if n /= 0 then realToFrac (n1/n) else 1)
+    let mvSat' = zipWith dv mvSat (repeat totalDuration)
+    let cvAffBySat' = zipWith dv cvAffBySat (repeat totalDuration)
+    assert
+      (and $ zipWith8' (\ _ b c d e f g h -> and $ map (== b) [c,d,e,f,g,h])
+                       ([undefined]) (map fst compliances) (map fst qualities)
+                       (map fst modeInterv) (map fst mvInterv)
+                       (map fst spInterv)
+                       (map fst mvSat') (map fst cvAffBySat'))
+      (return $ zipWith8' BlcResult blcs
+                                    (map snd compliances)
+                                    (map snd qualities)
+                                    (map snd modeInterv)
+                                    (map snd mvInterv)
+                                    (map snd spInterv)
+                                    (map snd mvSat')
+                                    (map snd cvAffBySat'))
+
+getCompliances :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Double)]
+getCompliances start end bids = do
+  uptimeDemands <- durations start end bids UptimeDemand
+  demands <- durations start end bids Demand
+  let d (k1, n1) (k2, n2) = assert (k1 == k2) $
+                            if n2 /= 0 then (k1, realToFrac $ n1/n2) else (k1,1)
+  let compliances = assert (length uptimeDemands == length demands) $
+                    zipWith d uptimeDemands demands
+  return compliances
+
+getQualities :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Double)]
+getQualities start end bids = do
+  performUptimes <- durations start end bids PerformUptime
+  uptimes <- durations start end bids Uptime
+  let d (k1, n1) (k2, n2) = assert (k1 == k2) $
+                            if n2 /= 0 then (k1, realToFrac $ n1/n2) else (k1,1)
+  let qualities = assert (length performUptimes == length uptimes) $
+                  zipWith d performUptimes uptimes
+  return qualities
 
 getModeInterv :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Int)]
 getModeInterv start end bids = do
@@ -90,17 +112,17 @@ numEvents start end bids eventType = do
   let result = union nums' def
   return $ map (\ (k, d) -> (toSqlKey (fromIntegral k), d)) (toAscList result)
 
-zipWith8 :: (a -> b -> c -> d -> e -> f -> g -> h -> z)
-         -> [a] -> [b] -> [c] -> [d] -> [e] -> [f] -> [g] -> [h] -> [z]
-zipWith8 fx c1 c2 c3 c4 c5 c6 c7 c8 = assert
+zipWith8' :: (a -> b -> c -> d -> e -> f -> g -> h -> z)
+          -> [a] -> [b] -> [c] -> [d] -> [e] -> [f] -> [g] -> [h] -> [z]
+zipWith8' fx c1 c2 c3 c4 c5 c6 c7 c8 = assert
   (length c1 == length c2 && length c2 == length c4 && length c3 == length c4
    && length c4 == length c5 && length c5 == length c6 && length c6 == length c7
    && length c7 == length c8)
-  (zipWith8' fx c1 c2 c3 c4 c5 c6 c7 c8)
+  (zipWith8 fx c1 c2 c3 c4 c5 c6 c7 c8)
 
-zipWith8' :: (a -> b -> c -> d -> e -> f -> g -> h -> z)
-          -> [a] -> [b] -> [c] -> [d] -> [e] -> [f] -> [g] -> [h] -> [z]
-zipWith8' fx c1 c2 c3 c4 c5 c6 c7 c8 =
+zipWith8 :: (a -> b -> c -> d -> e -> f -> g -> h -> z)
+         -> [a] -> [b] -> [c] -> [d] -> [e] -> [f] -> [g] -> [h] -> [z]
+zipWith8 fx c1 c2 c3 c4 c5 c6 c7 c8 =
   if (   null c1 || null c2 || null c3 || null c4 || null c5
       || null c6 || null c7 || null c8                       ) then []
   else (fx (head c1) (head c2) (head c3) (head c4) (head c5)

@@ -30,7 +30,7 @@ apcIssuesPage :: [Entity ApcIssue] -> Entity Apc -> Html
 apcIssuesPage issues (Entity aid apc) = layout "APC issues" $ do
   h1 $ toHtml (apcName apc)
   apcNavigation (apcArea apc) aid 4
-  table ! class_ "issues-table" $ do
+  table ! class_ "list-table" $ do
     col ! class_ "issues-table-col-1"
     col ! class_ "issues-table-col-2"
     col ! class_ "issues-table-col-3"
@@ -55,11 +55,6 @@ apcIssuesPage issues (Entity aid apc) = layout "APC issues" $ do
       td $ toHtml description'
       td $ (a ! href (viewApcIssueLink (apcArea apc) aid iid) $ "Edit"))
   p $ a ! href (toCreateApcIssueLink (apcArea apc) aid) $ "New issue..."
-
-roundTo :: RealFrac a => Int -> a -> Double
-roundTo places x = (realToFrac (round (x' * h) :: Int) :: Double) / h
-  where x' = realToFrac x
-        h = 10 ^ places
 
 trim :: Int -> String -> String
 trim n = unwords . take n . words

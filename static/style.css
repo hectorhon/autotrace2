@@ -220,18 +220,18 @@ button:hover {
 
 
 
-.issues-table {
+.list-table {
     table-layout: fixed;
     width: 100%;
 }
 
-.issues-table td, .issues-table th {
+.list-table td, .issues-table th {
     text-align: center;
     padding: 2px;
 }
 
-.issues-table tr:nth-child(even) { background: white; }
-.issues-table tr:nth-child(odd)  { background: aliceblue; }
+.list-table tr:nth-child(even) { background: white; }
+.list-table tr:nth-child(odd)  { background: aliceblue; }
 
 .issues-table-col-1 { width: 5%; }
 .issues-table-col-2 { width: 16%; }
@@ -240,7 +240,10 @@ button:hover {
 .issues-table-col-5 { width: 40%; }
 .issues-table-col-6 { width: 7%; }
 
-
+.bad-actors-table-col-1 { width: 10%; }
+.bad-actors-table-col-2 { width: 35%; }
+.bad-actors-table-col-3 { width: 35%; }
+.bad-actors-table-col-3 { width: 20%; }
 
 .result-table {
     table-layout: fixed;

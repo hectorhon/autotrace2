@@ -5,6 +5,7 @@ module Blc.Views where
 import Text.Blaze.Html5 as H hiding (area)
 import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
+import Data.List (sortOn)
 import Control.Monad (forM_, when)
 import Common.Views
 import Area.Links
@@ -59,6 +60,51 @@ areaBlcCalculatePage start end (Entity aid area) =
       button "Submit"
       cancelButton "area-blc-calculate-cancel-button"
 
+areaBlcBadActorsPage :: UTCTime -> UTCTime -> Entity Area -> Double -> Double
+                     -> [(Entity Blc, Double)] -> [(Entity Blc, Double)]
+                     -> Html
+areaBlcBadActorsPage start end (Entity aid area)
+                     complianceTarget qualityTarget
+                     badComplies badQualities =
+  layout "Bad actors" $ do
+    h1 $ toHtml (areaName area)
+    areaNavigation aid 2
+    h2 "Bad actors - Compliance"
+    p $ toHtml $ "Controllers with compliance below "
+                 ++ (show $ roundTo 1 $ complianceTarget * 100)
+                 ++ " % (" ++ formatDay start ++ " - " ++ formatDay end ++ ")"
+    if null badComplies then p "Hurray, nothing here!"
+    else table ! class_ "list-table" $ do
+      col ! class_ "bad-actors-table-col-1"
+      col ! class_ "bad-actors-table-col-2"
+      col ! class_ "bad-actors-table-col-3"
+      col ! class_ "bad-actors-table-col-4"
+      tr $ th "#" >> th "Controller" >> th "Description" >> th "Compliance (%)"
+      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badComplies)
+                 (\ (index, (Entity bid blc, compliance)) -> do
+                      td $ toHtml (show (index :: Int))
+                      td $ a ! href (viewBlcLink (blcArea blc) bid)
+                             $ toHtml (blcName blc)
+                      td $ toHtml (blcDescription blc)
+                      td $ toHtml (show $ (roundTo 1 $ compliance * 100)))
+    h2 "Bad actors - Quality"
+    p $ toHtml $ "Controllers with quality below "
+                 ++ (show $ roundTo 1 $ qualityTarget * 100)
+                 ++ " % (" ++ formatDay start ++ " - " ++ formatDay end ++ ")"
+    if null badQualities then p "Hurray, nothing here!"
+    else table ! class_ "list-table" $ do
+      col ! class_ "bad-actors-table-col-1"
+      col ! class_ "bad-actors-table-col-2"
+      col ! class_ "bad-actors-table-col-3"
+      col ! class_ "bad-actors-table-col-4"
+      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badQualities)
+                 (\ (index, (Entity bid blc, quality)) -> do
+                      td $ toHtml (show (index :: Int))
+                      td $ a ! href (viewBlcLink (blcArea blc) bid)
+                             $ toHtml (blcName blc)
+                      td $ toHtml (blcDescription blc)
+                      td $ toHtml (show $ (roundTo 1 $ quality * 100)))
+
 areaBlcPage :: UTCTime -> UTCTime -> AreaResult -> [AreaResult] -> [BlcResult]
             -> Html
 areaBlcPage start end
@@ -75,11 +121,13 @@ areaBlcPage start end
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Refresh"
-      a ! href (toCalculateAreaBlcsLink aid
-                                        (utcToLocalDay start)
-                                        (utcToLocalDay end)) $ "Recalculate"
+      a ! href (toCalculateAreaBlcsLink
+                aid (utcToLocalDay start) (utcToLocalDay end)) $ "Recalculate"
     h2 "Summary"
     byAreasBlcResultTable [areaResult] 
+    p $ a ! href (viewBlcBadActorsLink
+                  aid (utcToLocalDay start) (utcToLocalDay end) 95 95)
+          $ "View all bad actors"
     when (not $ null subareaResults) $ do
       h2 "Subareas"
       byAreasBlcResultTable subareaResults

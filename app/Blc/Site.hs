@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Blc.Site where
 
@@ -32,6 +34,7 @@ blcSite = toCreateBlc
      :<|> deleteBlc
      :<|> toCalculateBlc
      :<|> viewBlcsPerformance
+     :<|> viewBlcBadActors
      :<|> toCalculateAreaBlcs
      :<|> calculateAreaBlcs
 
@@ -95,6 +98,35 @@ viewBlcsPerformance aid mStart mEnd = do
     Nothing -> lift (left err404)
     Just (areaResult, subareaResults, blcResults) -> return $
       areaBlcPage start end areaResult subareaResults blcResults
+
+viewBlcBadActors :: Key Area -> Maybe Day -> Maybe Day
+                 -> Maybe Double -> Maybe Double
+                 -> AppM Html
+viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
+  mArea <- runDb $ selectFirst [AreaId ==. aid] []
+  case mArea of
+    Nothing   -> lift (left err404)
+    Just area -> do
+      start <- maybe (liftIO $ relativeDay (-1))
+                     (return . localDayToUTC)
+                     mStart
+      end <- maybe (liftIO $ relativeDay 0)
+                   (return . localDayToUTC)
+                   mEnd
+      bids <- descendantBlcsOf aid
+      compliances <- getCompliances start end bids
+      qualities <- getQualities start end bids
+      let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
+      let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
+      let badComplies = filter ((< complianceTarget) . snd) compliances
+      let badQualities = filter ((< qualityTarget) . snd) qualities
+      let getBlc (bid, v) = runDb (get bid)
+            >>= maybe (return Nothing)
+                      (\ blc -> return (Just (Entity bid blc, v)))
+      badComplies' <- liftM catMaybes $ mapM getBlc badComplies
+      badQualities' <- liftM catMaybes $ mapM getBlc badQualities
+      return (areaBlcBadActorsPage start end area
+              complianceTarget qualityTarget badComplies' badQualities')
 
 toCalculateAreaBlcs :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 toCalculateAreaBlcs aid mStart mEnd = do

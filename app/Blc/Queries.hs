@@ -3,6 +3,8 @@ module Blc.Queries
   , BlcResult (BlcResult)
   , getResult
   , descendantBlcsOf
+  , getCompliances
+  , getQualities
   ) where
 
 import Database.Esqueleto
