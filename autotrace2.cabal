@@ -32,6 +32,7 @@ library
                      , either
                      , mtl
                      , attoparsec
+                     , persistent-postgresql
                      , parsec
                      , http-types
                      , aeson
@@ -54,6 +55,10 @@ executable autotrace2-exe
                      , Blc.Views
                      , Blc.Calculate
                      , Blc.Queries
+                     , Blc.Queries.AreaResult
+                     , Blc.Queries.BlcResult
+                     , Blc.Queries.DescendantBlcs
+                     , Blc.Queries.Durations
                      , Apc.API
                      , Apc.Links
                      , Apc.Site
@@ -79,6 +84,7 @@ executable autotrace2-exe
                      , monad-logger
                      , mtl
                      , unordered-containers
+                     , containers
                      , wai
                      , warp
                      , wai-middleware-static

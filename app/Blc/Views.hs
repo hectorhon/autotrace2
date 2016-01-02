@@ -59,12 +59,14 @@ areaBlcCalculatePage start end (Entity aid area) =
       button "Submit"
       cancelButton "area-blc-calculate-cancel-button"
 
-areaBlcPage :: UTCTime -> UTCTime -> AreaBlcResult -> Html
-areaBlcPage start end result =
-  let AreaBlcResult area _ _ _ _ _ _ _ _ subareasBlcResult blcsResult = result
-  in layout "Controller performance" $ do
-    h1 (toHtml $ areaName $ entityVal area)
-    areaNavigation (entityKey area) 2
+areaBlcPage :: UTCTime -> UTCTime -> AreaResult -> [AreaResult] -> [BlcResult]
+            -> Html
+areaBlcPage start end
+            areaResult@(AreaResult (Entity aid area) _ _ _ _ _ _ _ _)
+            subareaResults blcResults =
+  layout "Controller performance" $ do
+    h1 (toHtml $ areaName area)
+    areaNavigation aid 2
     H.form ! class_ "line-form" ! method "get" $ do
       H.label $ do
         H.span "Start"
@@ -73,19 +75,19 @@ areaBlcPage start end result =
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Refresh"
-      a ! href (toCalculateAreaBlcsLink (entityKey area)
+      a ! href (toCalculateAreaBlcsLink aid
                                         (utcToLocalDay start)
                                         (utcToLocalDay end)) $ "Recalculate"
     h2 "Summary"
-    byAreasBlcResultTable [result] 
-    when (not $ null subareasBlcResult) $ do
+    byAreasBlcResultTable [areaResult] 
+    when (not $ null subareaResults) $ do
       h2 "Subareas"
-      byAreasBlcResultTable subareasBlcResult
-    when (not $ null blcsResult) $ do
+      byAreasBlcResultTable subareaResults
+    when (not $ null blcResults) $ do
       h2 "Controllers"
-      blcsResultTable blcsResult
+      blcsResultTable blcResults
 
-byAreasBlcResultTable :: [AreaBlcResult] -> Html
+byAreasBlcResultTable :: [AreaResult] -> Html
 byAreasBlcResultTable results = table ! class_ "result-table" $ do
   col ! class_ "result-table-col-1"
   col ! class_ "result-table-col-2"
@@ -105,8 +107,8 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
     th "MV sat."
     th "CV aff. by sat."
   let over x y = show x ++ " / " ++ show y in forM_ results
-    (\ (AreaBlcResult (Entity aid area) compliance quality blcCount
-       modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat _ _) ->
+    (\ (AreaResult (Entity aid area) compliance quality blcCount
+       modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) ->
       tr $ do
         td $ a ! href (viewBlcsPerformanceDefaultDayLink aid)
                $ toHtml (areaName area)
@@ -115,8 +117,8 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
         td $ toHtml (show modeIntervCount)
         td $ toHtml (show mvIntervCount)
         td $ toHtml (show spIntervCount)
-        td $ bar "orange" mvSat 100 ""
-        td $ bar "orange" cvAffBySat 100 "")
+        td $ bar "orange" mvSat 1 ""
+        td $ bar "orange" cvAffBySat 1 "")
 
 blcsResultTable :: [BlcResult] -> Html
 blcsResultTable results = table ! class_ "result-table" $ do
@@ -141,13 +143,13 @@ blcsResultTable results = table ! class_ "result-table" $ do
     (\ (BlcResult (Entity bid blc) compliance quality
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) -> tr $ do
       td $ a ! href (viewBlcLink (blcArea blc) bid) $ toHtml (blcName blc)
-      td $ bar "lightgreen" compliance 100 ""
-      td $ bar "lightblue" quality 100 ""
+      td $ bar "lightgreen" compliance 1 ""
+      td $ bar "lightblue" quality 1 ""
       td $ toHtml (show modeIntervCount)
       td $ toHtml (show mvIntervCount)
       td $ toHtml (show spIntervCount)
-      td $ bar "orange" mvSat 100 ""
-      td $ bar "orange" cvAffBySat 100 "")
+      td $ bar "orange" mvSat 1 ""
+      td $ bar "orange" cvAffBySat 1 "")
 
 blcNavigation :: Key Area -> Key Blc -> Int -> Html
 blcNavigation pid bid = navigation

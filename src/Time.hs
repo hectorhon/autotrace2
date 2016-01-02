@@ -8,8 +8,12 @@ module Time
 
 import Data.Time
 import Servant
+import Database.Persist.Postgresql
+import Data.Attoparsec.ByteString.Char8
+import qualified Data.ByteString.Char8 as B (ByteString, unpack)
+import Control.Exception (assert)
 import Control.Monad.Except
-import Data.Text (pack, unpack)
+import Data.Text (pack, unpack, append)
 
 -- * Time references
 
@@ -40,6 +44,47 @@ instance FromFormUrlEncoded (Day, Day) where
                  (maybe (throwError "Invalid end") return . parseDay . unpack)
                  (lookup "end" params)
     return (start, end)
+
+-- * Postgresql interval to NominalDiffTime
+
+-- | Parses positive intervals only
+decodePGInterval :: B.ByteString -> Maybe NominalDiffTime
+decodePGInterval raw = maybeResult $ feed (parse p raw) "\n"
+  where p = choice [p1, p2, p3]
+        p1 = do d <- decimal :: Parser Int
+                _ <- string " days "
+                h <- decimal :: Parser Int
+                _ <- char ':'
+                m <- decimal :: Parser Int
+                _ <- char ':'
+                s <- double
+                _ <- endOfLine
+                return $ (realToFrac :: Double -> NominalDiffTime) $
+                  realToFrac d * 86400
+                  + realToFrac h * 3600
+                  + realToFrac m * 60
+                  + s
+        p2 = do d <- decimal :: Parser Int
+                _ <- string " days"
+                _ <- endOfLine
+                return $ realToFrac (realToFrac d * 86400 :: Double)
+        p3 = do h <- decimal :: Parser Int
+                _ <- char ':'
+                m <- decimal :: Parser Int
+                _ <- char ':'
+                s <- double
+                _ <- endOfLine
+                return $ realToFrac $ realToFrac h * 3600
+                                    + realToFrac m * 60
+                                    + s
+
+instance PersistField NominalDiffTime where
+  toPersistValue = assert False undefined
+  fromPersistValue (PersistDbSpecific str) = maybe
+    (Left (append "Failed to parse " (pack $ B.unpack str)))
+    (Right)
+    (decodePGInterval str)
+  fromPersistValue _ = assert False undefined
 
 -- * Parse from a string
 
