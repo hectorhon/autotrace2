@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Blc.Site where
 
@@ -32,6 +34,7 @@ blcSite = toCreateBlc
      :<|> deleteBlc
      :<|> toCalculateBlc
      :<|> viewBlcsPerformance
+     :<|> viewBlcBadActors
      :<|> toCalculateAreaBlcs
      :<|> calculateAreaBlcs
 
@@ -84,6 +87,22 @@ toCalculateBlc pid bid mStart mEnd = do
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
+  start <- maybe (liftIO $ relativeDay (-1))
+                 (return . localDayToUTC)
+                 mStart
+  end <- maybe (liftIO $ relativeDay 0)
+               (return . localDayToUTC)
+               mEnd
+  mResult <- getResult start end aid
+  case mResult of
+    Nothing -> lift (left err404)
+    Just (areaResult, subareaResults, blcResults) -> return $
+      areaBlcPage start end areaResult subareaResults blcResults
+
+viewBlcBadActors :: Key Area -> Maybe Day -> Maybe Day
+                 -> Maybe Double -> Maybe Double
+                 -> AppM Html
+viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
   mArea <- runDb $ selectFirst [AreaId ==. aid] []
   case mArea of
     Nothing   -> lift (left err404)
@@ -94,7 +113,20 @@ viewBlcsPerformance aid mStart mEnd = do
       end <- maybe (liftIO $ relativeDay 0)
                    (return . localDayToUTC)
                    mEnd
-      blcResultOf area start end >>= return . areaBlcPage start end
+      bids <- descendantBlcsOf aid
+      compliances <- getCompliances start end bids
+      qualities <- getQualities start end bids
+      let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
+      let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
+      let badComplies = filter ((< complianceTarget) . snd) compliances
+      let badQualities = filter ((< qualityTarget) . snd) qualities
+      let getBlc (bid, v) = runDb (get bid)
+            >>= maybe (return Nothing)
+                      (\ blc -> return (Just (Entity bid blc, v)))
+      badComplies' <- liftM catMaybes $ mapM getBlc badComplies
+      badQualities' <- liftM catMaybes $ mapM getBlc badQualities
+      return (areaBlcBadActorsPage start end area
+              complianceTarget qualityTarget badComplies' badQualities')
 
 toCalculateAreaBlcs :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 toCalculateAreaBlcs aid mStart mEnd = do
@@ -112,7 +144,7 @@ toCalculateAreaBlcs aid mStart mEnd = do
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
 calculateAreaBlcs aid (start, end) = do
-  blcs <- runDb $ selectList [BlcArea ==. aid] []
-  forM_ blcs (markCalculate (localDayToUTC start) (localDayToUTC end))
+  bids <- descendantBlcsOf aid
+  forM_ bids (markCalculate (localDayToUTC start) (localDayToUTC end))
   redirect (viewAreaLink' aid)
   return undefined

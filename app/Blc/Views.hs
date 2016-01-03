@@ -5,6 +5,7 @@ module Blc.Views where
 import Text.Blaze.Html5 as H hiding (area)
 import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
+import Data.List (sortOn)
 import Control.Monad (forM_, when)
 import Common.Views
 import Area.Links
@@ -59,12 +60,59 @@ areaBlcCalculatePage start end (Entity aid area) =
       button "Submit"
       cancelButton "area-blc-calculate-cancel-button"
 
-areaBlcPage :: UTCTime -> UTCTime -> AreaBlcResult -> Html
-areaBlcPage start end result =
-  let AreaBlcResult area _ _ _ _ _ _ _ _ subareasBlcResult blcsResult = result
-  in layout "Controller performance" $ do
-    h1 (toHtml $ areaName $ entityVal area)
-    areaNavigation (entityKey area) 2
+areaBlcBadActorsPage :: UTCTime -> UTCTime -> Entity Area -> Double -> Double
+                     -> [(Entity Blc, Double)] -> [(Entity Blc, Double)]
+                     -> Html
+areaBlcBadActorsPage start end (Entity aid area)
+                     complianceTarget qualityTarget
+                     badComplies badQualities =
+  layout "Bad actors" $ do
+    h1 $ toHtml (areaName area)
+    areaNavigation aid 2
+    h2 "Bad actors - Compliance"
+    p $ toHtml $ "Controllers with compliance below "
+                 ++ (show $ roundTo 1 $ complianceTarget * 100)
+                 ++ " % (" ++ formatDay start ++ " - " ++ formatDay end ++ ")"
+    if null badComplies then p "Hurray, nothing here!"
+    else table ! class_ "list-table" $ do
+      col ! class_ "bad-actors-table-col-1"
+      col ! class_ "bad-actors-table-col-2"
+      col ! class_ "bad-actors-table-col-3"
+      col ! class_ "bad-actors-table-col-4"
+      tr $ th "#" >> th "Controller" >> th "Description" >> th "Compliance (%)"
+      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badComplies)
+                 (\ (index, (Entity bid blc, compliance)) -> do
+                      td $ toHtml (show (index :: Int))
+                      td $ a ! href (viewBlcLink (blcArea blc) bid)
+                             $ toHtml (blcName blc)
+                      td $ toHtml (blcDescription blc)
+                      td $ toHtml (show $ (roundTo 1 $ compliance * 100)))
+    h2 "Bad actors - Quality"
+    p $ toHtml $ "Controllers with quality below "
+                 ++ (show $ roundTo 1 $ qualityTarget * 100)
+                 ++ " % (" ++ formatDay start ++ " - " ++ formatDay end ++ ")"
+    if null badQualities then p "Hurray, nothing here!"
+    else table ! class_ "list-table" $ do
+      col ! class_ "bad-actors-table-col-1"
+      col ! class_ "bad-actors-table-col-2"
+      col ! class_ "bad-actors-table-col-3"
+      col ! class_ "bad-actors-table-col-4"
+      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badQualities)
+                 (\ (index, (Entity bid blc, quality)) -> do
+                      td $ toHtml (show (index :: Int))
+                      td $ a ! href (viewBlcLink (blcArea blc) bid)
+                             $ toHtml (blcName blc)
+                      td $ toHtml (blcDescription blc)
+                      td $ toHtml (show $ (roundTo 1 $ quality * 100)))
+
+areaBlcPage :: UTCTime -> UTCTime -> AreaResult -> [AreaResult] -> [BlcResult]
+            -> Html
+areaBlcPage start end
+            areaResult@(AreaResult (Entity aid area) _ _ _ _ _ _ _ _)
+            subareaResults blcResults =
+  layout "Controller performance" $ do
+    h1 (toHtml $ areaName area)
+    areaNavigation aid 2
     H.form ! class_ "line-form" ! method "get" $ do
       H.label $ do
         H.span "Start"
@@ -73,19 +121,21 @@ areaBlcPage start end result =
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Refresh"
-      a ! href (toCalculateAreaBlcsLink (entityKey area)
-                                        (utcToLocalDay start)
-                                        (utcToLocalDay end)) $ "Recalculate"
+      a ! href (toCalculateAreaBlcsLink
+                aid (utcToLocalDay start) (utcToLocalDay end)) $ "Recalculate"
     h2 "Summary"
-    byAreasBlcResultTable [result] 
-    when (not $ null subareasBlcResult) $ do
+    byAreasBlcResultTable [areaResult] 
+    p $ a ! href (viewBlcBadActorsLink
+                  aid (utcToLocalDay start) (utcToLocalDay end) 95 95)
+          $ "View all bad actors"
+    when (not $ null subareaResults) $ do
       h2 "Subareas"
-      byAreasBlcResultTable subareasBlcResult
-    when (not $ null blcsResult) $ do
+      byAreasBlcResultTable subareaResults
+    when (not $ null blcResults) $ do
       h2 "Controllers"
-      blcsResultTable blcsResult
+      blcsResultTable blcResults
 
-byAreasBlcResultTable :: [AreaBlcResult] -> Html
+byAreasBlcResultTable :: [AreaResult] -> Html
 byAreasBlcResultTable results = table ! class_ "result-table" $ do
   col ! class_ "result-table-col-1"
   col ! class_ "result-table-col-2"
@@ -105,8 +155,8 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
     th "MV sat."
     th "CV aff. by sat."
   let over x y = show x ++ " / " ++ show y in forM_ results
-    (\ (AreaBlcResult (Entity aid area) compliance quality blcCount
-       modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat _ _) ->
+    (\ (AreaResult (Entity aid area) compliance quality blcCount
+       modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) ->
       tr $ do
         td $ a ! href (viewBlcsPerformanceDefaultDayLink aid)
                $ toHtml (areaName area)
@@ -115,8 +165,8 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
         td $ toHtml (show modeIntervCount)
         td $ toHtml (show mvIntervCount)
         td $ toHtml (show spIntervCount)
-        td $ bar "orange" mvSat 100 ""
-        td $ bar "orange" cvAffBySat 100 "")
+        td $ bar "orange" mvSat 1 ""
+        td $ bar "orange" cvAffBySat 1 "")
 
 blcsResultTable :: [BlcResult] -> Html
 blcsResultTable results = table ! class_ "result-table" $ do
@@ -141,13 +191,13 @@ blcsResultTable results = table ! class_ "result-table" $ do
     (\ (BlcResult (Entity bid blc) compliance quality
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) -> tr $ do
       td $ a ! href (viewBlcLink (blcArea blc) bid) $ toHtml (blcName blc)
-      td $ bar "lightgreen" compliance 100 ""
-      td $ bar "lightblue" quality 100 ""
+      td $ bar "lightgreen" compliance 1 ""
+      td $ bar "lightblue" quality 1 ""
       td $ toHtml (show modeIntervCount)
       td $ toHtml (show mvIntervCount)
       td $ toHtml (show spIntervCount)
-      td $ bar "orange" mvSat 100 ""
-      td $ bar "orange" cvAffBySat 100 "")
+      td $ bar "orange" mvSat 1 ""
+      td $ bar "orange" cvAffBySat 1 "")
 
 blcNavigation :: Key Area -> Key Blc -> Int -> Html
 blcNavigation pid bid = navigation

@@ -17,16 +17,21 @@ import Time
 
 data CalcOpts = CalcOpts String Int UTCTime UTCTime
 
-markCalculate :: UTCTime -> UTCTime -> Entity Blc -> AppM ()
-markCalculate start end blc = do
+markCalculate :: UTCTime -> UTCTime -> Key Blc -> AppM ()
+markCalculate start end bid = do
   qsem    <- asks getQSem
   counter <- asks getCounter
   src     <- asks getSrcUrl
   port    <- asks getSrcPort
   connStr <- asks getPoolConnStr
   let calcOpts = CalcOpts src port start end
-  _       <- liftIO $ forkIO $ calculateThread qsem counter calcOpts connStr blc
-  return ()
+  mBlc <- runDb (get bid)
+  case mBlc of
+    Nothing -> return ()
+    Just blc -> do
+      let eb = Entity bid blc
+      _ <- liftIO $ forkIO $ calculateThread qsem counter calcOpts connStr eb
+      return ()
 
 calculateThread :: QSem -> MVar Int -> CalcOpts -> ByteString -> Entity Blc
                 -> IO ()

@@ -18,6 +18,7 @@ type BlcSite = ToCreateBlc
           :<|> DeleteBlc
           :<|> ToCalculateBlc
           :<|> ViewBlcsPerformance
+          :<|> ViewBlcBadActors
           :<|> ToCalculateAreaBlcs
           :<|> CalculateAreaBlcs
 
@@ -54,6 +55,13 @@ type ViewBlcsPerformance = "area" :> Capture "aid" (Key Area)
                            :> "blc" :> "performance"
                            :> QueryParam "start" Day :> QueryParam "end" Day
                            :> Get '[HTML] Html
+
+type ViewBlcBadActors = "area" :> Capture "aid" (Key Area)
+                        :> "blc" :> "bad-actors"
+                        :> QueryParam "start" Day :> QueryParam "end" Day
+                        :> QueryParam "complianceTargetPct" Double
+                        :> QueryParam "qualityTargetPct" Double
+                        :> Get '[HTML] Html
 
 type ViewBlcsPerformance' = "area" :> Capture "aid" (Key Area)
                             :> "blc" :> "performance"

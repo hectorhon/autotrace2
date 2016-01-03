@@ -165,3 +165,8 @@ bar color val maxVal barContents = let
                       ++ "width:"            ++ show percent ++ "%;")
              $ ""
        H.div ! class_ "bar-inner-text" $ toHtml barContents'
+
+roundTo :: RealFrac a => Int -> a -> Double
+roundTo places x = (realToFrac (round (x' * h) :: Int) :: Double) / h
+  where x' = realToFrac x
+        h = 10 ^ places
