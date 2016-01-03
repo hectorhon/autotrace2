@@ -54,15 +54,15 @@ executable autotrace2-exe
                      , Blc.Views
                      , Blc.Calculate
                      , Blc.Queries
-                     , Apc.API
-                     , Apc.Links
-                     , Apc.Site
-                     , Apc.Views
-                     , Apc.Calculate
-                     , Apc.Issue.API
-                     , Apc.Issue.Links
-                     , Apc.Issue.Site
-                     , Apc.Issue.Views
+                     , APC.API
+                     , APC.Links
+                     , APC.Site
+                     , APC.Views
+                     , APC.Calculate
+                     , APC.Issue.API
+                     , APC.Issue.Links
+                     , APC.Issue.Site
+                     , APC.Issue.Views
                      , Common.Links
                      , Common.Responses
                      , Common.Views

@@ -19,10 +19,10 @@ data AreaBlcResult =
                 Double           -- ^ MV saturation
                 Double           -- ^ CV affected by saturation
                 [AreaBlcResult]
-                [BlcResultSummary]
+                [BlcResult]
 
-data BlcResultSummary =
-  BlcResultSummary (Entity Blc)
+data BlcResult =
+  BlcResult (Entity Blc)
             Double        -- ^ Compliance
             Double        -- ^ Quality
             Int           -- ^ Mode intervention
@@ -32,100 +32,64 @@ data BlcResultSummary =
             Double        -- ^ CV affected by saturation
 
 blcResultOf :: Entity Area -> UTCTime -> UTCTime -> AppM AreaBlcResult
-blcResultOf area start end =
-  let duration = realToFrac (diffUTCTime end start) in do
-    -- Subareas result
-    children <- childAreasOf (entityKey area)
-    blcss    <- mapM descendantBlcsOf (map entityKey children)
-    resultsss <- liftM ((map . map . map) entityVal) $ forM blcss $
-      (\ blcs -> forM blcs $
-         (\ blc -> runDb $ selectList [ BlcResultBlc ==. blc
-                                      , BlcResultStart >=. start
-                                      , BlcResultEnd <=. end ] [] ))
-    let compliances = (flip map) resultsss
-          (\ resultss -> length $ filter (> 95) $ (flip map) resultss
-             (\ results -> sum (map blcResultUptimeDemand results)
-                           `d` sum (map blcResultDemand results)
-                           * 100))
-    let qualities = (flip map) resultsss
-          (\ resultss -> length $ filter (> 95) $ (flip map) resultss
-             (\ results -> sum (map blcResultPerformUptime results)
-                           `d` sum (map blcResultUptime results)
-                           * 100))
-    let blcCounts = map length blcss
-    modeIntervCounts <- mapM (numEvents ModeInterv start end) blcss
-    mvIntervCounts <- mapM (numEvents MvInterv start end) blcss
-    spIntervCounts <- mapM (numEvents SpInterv start end) blcss
-    let durations = map ((* duration) . realToFrac . length) blcss
-    let mvSats = (flip map) resultsss
-          (\ resultss -> sum $ zipWith (flip d) durations $
-             (flip map) resultss
-               (\ results -> sum (map blcResultMvSat results)))
-    let cvAffBySats = (flip map) resultsss
-          (\ resultss -> sum $ zipWith (flip d) durations $
-             (flip map) resultss
-               (\ results -> sum (map blcResultCvAffBySat results)))
-    -- Blcs here
-    blcs <- childBlcsOf (entityKey area)
-    resultss <- liftM ((map . map) entityVal) $ forM blcs $
-      (\ blc -> runDb $ selectList [ BlcResultBlc ==. (entityKey blc)
-                                   , BlcResultStart >=. start
-                                   , BlcResultEnd <=. end ] [] )
-    let compliances' = (flip map) resultss
-          (\ results -> sum (map blcResultUptimeDemand results)
-                        `d` sum (map blcResultDemand results)
-                        * 100)
-    let qualities' = (flip map) resultss
-          (\ results -> sum (map blcResultPerformUptime results)
-                        `d` sum (map blcResultUptime results)
-                        * 100)
-    modeIntervCounts' <- forM blcs
-                         (numEvents ModeInterv start end . return . entityKey)
-    mvIntervCounts' <- forM blcs
-                       (numEvents MvInterv start end . return . entityKey)
-    spIntervCounts' <- forM blcs
-                       (numEvents SpInterv start end . return . entityKey)
-    let mvSats' = (flip map) resultss
-          (\ results -> sum (map blcResultMvSat results) `d` duration)
-    let cvAffBySats' = (flip map) resultss
-          (\ results -> sum (map blcResultCvAffBySat results) `d` duration)
-    -- Area summary
-    let compliance = sum compliances + length (filter (>95) compliances')
-    let quality = sum qualities + length (filter (>95) qualities')
-    let blcCount = sum blcCounts + length blcs
-    let modeIntervCount = sum modeIntervCounts + sum modeIntervCounts'
-    let mvIntervCount = sum mvIntervCounts + sum mvIntervCounts'
-    let spIntervCount = sum spIntervCounts + sum spIntervCounts'
-    let duration' = sum durations + duration * (realToFrac $ length blcs)
-    let mvSat = (sum (zipWith (*) durations mvSats)
-                 + sum (map (* duration) mvSats'))
-                `d` duration'
-    let cvAffBySat = (sum (zipWith (*) durations cvAffBySats)
-                      + sum (map (* duration) cvAffBySats'))
-                     `d` duration'
-    -- Zip it up
-    return $ AreaBlcResult area
-                           compliance quality blcCount
-                           modeIntervCount mvIntervCount spIntervCount
-                           mvSat cvAffBySat
-                           (zipWith11 AreaBlcResult children
-                                                    compliances qualities
-                                                    blcCounts
-                                                    modeIntervCounts
-                                                    mvIntervCounts
-                                                    spIntervCounts
-                                                    mvSats cvAffBySats
-                                                    (repeat []) (repeat []))
-                           (zipWith8 BlcResultSummary blcs
-                                               compliances' qualities'
-                                               modeIntervCounts'
-                                               mvIntervCounts'
-                                               spIntervCounts'
-                                               mvSats' cvAffBySats')
-
--- |Defaults to zero on divide by zero
-d :: Double -> Double -> Double
-d a b = if b == 0 then 0 else a / b
+blcResultOf area start end = let duration = diffUTCTime end start in do
+  -- Subareas result
+  children             <- childAreasOf (entityKey area)
+  blcss                <- mapM descendantBlcsOf (map entityKey children)
+  intervalsss          <- mapM (mapM (intervalsDuring' start end)) blcss
+  let compliancess     = map (map complianceOf) intervalsss
+  let compliances      = map (length . filter (> 95)) compliancess
+  let qualitiess       = map (map qualityOf) intervalsss
+  let qualities        = map (length . filter (> 95)) qualitiess
+  let blcCounts        = map length blcss
+  let intervalss       = map concat intervalsss
+  let modeIntervCounts = map (modeIntervCountDuring start end) intervalss
+  mvIntervCounts       <- mapM (numEvents MvInterv start end) blcss
+  spIntervCounts       <- mapM (numEvents SpInterv start end) blcss
+  let durations        = map ((* duration) . realToFrac . length) blcss
+  let mvSats           = zipWith mvSatOf durations intervalss
+  let cvAffBySats      = zipWith cvAffBySatOf durations intervalss
+  -- Blcs here
+  blcs                  <- childBlcsOf (entityKey area)
+  intervalss'           <- mapM (intervalsDuring' start end . entityKey) blcs
+  let compliances'      = map complianceOf intervalss'
+  let qualities'        = map qualityOf intervalss'
+  let modeIntervCounts' = map (modeIntervCountDuring start end) intervalss'
+  mvIntervCounts' <- mapM (numEvents MvInterv start end . return.entityKey) blcs
+  spIntervCounts' <- mapM (numEvents SpInterv start end . return.entityKey) blcs
+  let mvSats'           = map (mvSatOf duration) intervalss'
+  let cvAffBySats'      = map (cvAffBySatOf duration) intervalss'
+  -- Area summary
+  let intervalss''    = (concat intervalsss) ++ intervalss'
+  let compliance      = length $ filter (> 95) $ map complianceOf intervalss''
+  let quality         = length $ filter (> 95) $ map qualityOf intervalss''
+  let blcCount        = length intervalss''
+  let intervals'      = concat intervalss''
+  let modeIntervCount = modeIntervCountDuring start end intervals'
+  let blcs'           = concat blcss ++ (map entityKey blcs)
+  mvIntervCount       <- numEvents MvInterv start end blcs'
+  spIntervCount       <- numEvents SpInterv start end blcs'
+  let duration'       = duration * realToFrac (length blcs')
+  let mvSat           = mvSatOf duration' intervals'
+  let cvAffBySat      = cvAffBySatOf duration' intervals'
+  -- Zip it up
+  return $ AreaBlcResult area
+                         compliance quality blcCount
+                         modeIntervCount mvIntervCount spIntervCount
+                         mvSat cvAffBySat
+                         (zipWith11 AreaBlcResult children
+                                                  compliances qualities
+                                                  blcCounts
+                                                  modeIntervCounts
+                                                  mvIntervCounts spIntervCounts
+                                                  mvSats cvAffBySats
+                                                  (repeat []) (repeat []))
+                         (zipWith8 BlcResult blcs
+                                             compliances' qualities'
+                                             modeIntervCounts'
+                                             mvIntervCounts'
+                                             spIntervCounts'
+                                             mvSats' cvAffBySats')
 
 childAreasOf :: Key Area -> AppM [Entity Area]
 childAreasOf area = runDb $ selectList [AreaParent ==. Just area] [Asc AreaName]
@@ -153,12 +117,58 @@ descendantBlcsOf' area = runDb $ rawSql
 childBlcsOf :: Key Area -> AppM [Entity Blc]
 childBlcsOf area = runDb $ selectList [BlcArea ==. area] [Asc BlcName]
 
+intervalsDuring' :: UTCTime -> UTCTime -> Key Blc -> AppM [BlcInterval]
+intervalsDuring' start end blc =
+  let timeFilter = (    [BlcIntervalStart >=. start, BlcIntervalStart <.  end]
+                    ||. [BlcIntervalEnd   >.  start, BlcIntervalEnd   <=. end]
+                    ||. [BlcIntervalStart <=. start, BlcIntervalEnd   >=. end])
+  in liftM (map (trim . entityVal)) $ runDb $ selectList
+       ([ BlcIntervalBlc ==. blc ] ++ timeFilter) []
+  where trim (BlcInterval bid start' end' category) =
+          BlcInterval bid (max start' start) (min end' end) category
+
+complianceOf :: [BlcInterval] -> Double
+complianceOf blcis =
+  if totalDurationOf demand == 0 then 0
+  else realToFrac $ totalDurationOf uptimeDemand / totalDurationOf demand * 100
+  where uptimeDemand = filter ((== UptimeDemand) . blcIntervalCategory) blcis
+        demand = filter ((== Demand) . blcIntervalCategory) blcis
+
+qualityOf :: [BlcInterval] -> Double
+qualityOf blcis =
+  if totalDurationOf uptime == 0 then 0
+  else realToFrac $ totalDurationOf performUptime / totalDurationOf uptime * 100
+  where performUptime = filter ((== PerformUptime) . blcIntervalCategory) blcis
+        uptime = filter ((== Uptime) . blcIntervalCategory) blcis
+
+durationOf :: BlcInterval -> NominalDiffTime
+durationOf (BlcInterval _ start end _) = diffUTCTime end start
+
+totalDurationOf :: [BlcInterval] -> NominalDiffTime
+totalDurationOf = foldr ((+) . durationOf) 0
+
 numEvents :: EventType -> UTCTime -> UTCTime -> [Key Blc] -> AppM Int
 numEvents eventType start end blcs = runDb $
   count [ BlcEventTime >=. start
         , BlcEventTime <=. end
         , BlcEventBlc <-. blcs
         , BlcEventCategory ==. eventType ]
+
+modeIntervCountDuring :: UTCTime -> UTCTime -> [BlcInterval] -> Int
+modeIntervCountDuring _ end = length . filter
+  (\ i -> blcIntervalCategory i == Uptime && blcIntervalEnd i /= end)
+
+mvSatOf :: NominalDiffTime -> [BlcInterval] -> Double
+mvSatOf totalDuration blcis =
+  if totalDuration == 0 then 0
+  else realToFrac $ totalDurationOf mvSat / totalDuration * 100
+  where mvSat = filter ((== MvSat) . blcIntervalCategory) blcis
+
+cvAffBySatOf :: NominalDiffTime -> [BlcInterval] -> Double
+cvAffBySatOf totalDuration blcis =
+  if totalDuration == 0 then 0
+  else realToFrac $ totalDurationOf cvAffBySat / totalDuration * 100
+  where cvAffBySat = filter ((== CvAffBySat) . blcIntervalCategory) blcis
 
 zipWith8 :: (a -> b -> c -> d -> e -> f -> g -> h -> z)
          -> [a] -> [b] -> [c] -> [d] -> [e] -> [f] -> [g] -> [h] -> [z]

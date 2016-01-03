@@ -23,5 +23,5 @@ derivePersistField "MetricType"
 instance ToJSON MetricType
 instance FromJSON MetricType
 
-data EventType = ModeInterv | MvInterv | SpInterv deriving (Show, Read, Eq)
+data EventType = MvInterv | SpInterv deriving (Show, Read, Eq)
 derivePersistField "EventType"
