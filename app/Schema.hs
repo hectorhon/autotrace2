@@ -98,6 +98,18 @@ share [ mkPersist sqlSettings,
       start        UTCTime
       end          UTCTime
       category     MetricType
+    BlockHead
+      name         String
+      type_        String
+      firstDate    UTCTime
+      currentDate  UTCTime
+      group        String
+      NameTypeGroup name type_ group
+    BlockAttr
+      block        BlockHeadId
+      changedOn    UTCTime
+      key          String
+      value        String
   |]
 
 instance ToBackendKey SqlBackend a => FromText (Key a) where

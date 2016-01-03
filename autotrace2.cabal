@@ -30,6 +30,7 @@ library
                      , text
                      , time
                      , either
+                     , resourcet
                      , mtl
                      , attoparsec
                      , persistent-postgresql
@@ -38,6 +39,7 @@ library
                      , aeson
                      , servant-server
                      , servant-client
+                     , wai-extra
   default-language:    Haskell2010
 
 executable autotrace2-exe
