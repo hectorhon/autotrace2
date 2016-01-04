@@ -80,13 +80,13 @@ areaBlcBadActorsPage start end (Entity aid area)
       col ! class_ "bad-actors-table-col-3"
       col ! class_ "bad-actors-table-col-4"
       tr $ th "#" >> th "Controller" >> th "Description" >> th "Compliance (%)"
-      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badComplies)
-                 (\ (index, (Entity bid blc, compliance)) -> do
-                      td $ toHtml (show (index :: Int))
-                      td $ a ! href (viewBlcLink (blcArea blc) bid)
-                             $ toHtml (blcName blc)
-                      td $ toHtml (blcDescription blc)
-                      td $ toHtml (show $ (roundTo 1 $ compliance * 100)))
+      forM_ (zip [1..] $ reverse $ sortOn snd badComplies)
+            (\ (index, (Entity bid blc, compliance)) -> tr $ do
+               td $ toHtml (show (index :: Int))
+               td $ a ! href (viewBlcLink (blcArea blc) bid)
+                      $ toHtml (blcName blc)
+               td $ toHtml (blcDescription blc)
+               td $ toHtml (show $ (roundTo 1 $ compliance * 100)))
     h2 "Bad actors - Quality"
     p $ toHtml $ "Controllers with quality below "
                  ++ (show $ roundTo 1 $ qualityTarget * 100)
@@ -97,13 +97,13 @@ areaBlcBadActorsPage start end (Entity aid area)
       col ! class_ "bad-actors-table-col-2"
       col ! class_ "bad-actors-table-col-3"
       col ! class_ "bad-actors-table-col-4"
-      tr $ forM_ (zip [1..] $ reverse $ sortOn snd badQualities)
-                 (\ (index, (Entity bid blc, quality)) -> do
-                      td $ toHtml (show (index :: Int))
-                      td $ a ! href (viewBlcLink (blcArea blc) bid)
-                             $ toHtml (blcName blc)
-                      td $ toHtml (blcDescription blc)
-                      td $ toHtml (show $ (roundTo 1 $ quality * 100)))
+      forM_ (zip [1..] $ reverse $ sortOn snd badQualities)
+            (\ (index, (Entity bid blc, quality)) -> tr $ do
+                 td $ toHtml (show (index :: Int))
+                 td $ a ! href (viewBlcLink (blcArea blc) bid)
+                        $ toHtml (blcName blc)
+                 td $ toHtml (blcDescription blc)
+                 td $ toHtml (show $ (roundTo 1 $ quality * 100)))
 
 areaBlcPage :: UTCTime -> UTCTime -> AreaResult -> [AreaResult] -> [BlcResult]
             -> Html
