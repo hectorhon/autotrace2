@@ -11,6 +11,7 @@ import Database.Esqueleto
 import Data.Time
 import Control.Exception (assert)
 import Data.IntMap (fromAscList, fromList, union, toAscList)
+import Data.List (sortOn)
 import Blc.Queries.Durations
 import AppM
 import Schema
@@ -31,6 +32,7 @@ getChildBlcResult start end aid =
   in do
     blcs <- runDb $ select $ from $ \ i -> do
       where_ (i ^. BlcArea ==. val aid)
+      orderBy [asc (i ^. BlcId)]
       return i
     let bids = map entityKey blcs
     compliances <- getCompliances start end bids
@@ -44,19 +46,21 @@ getChildBlcResult start end aid =
     let mvSat' = zipWith dv mvSat (repeat totalDuration)
     let cvAffBySat' = zipWith dv cvAffBySat (repeat totalDuration)
     assert
-      (and $ zipWith8' (\ _ b c d e f g h -> and $ map (== b) [c,d,e,f,g,h])
-                       ([undefined]) (map fst compliances) (map fst qualities)
-                       (map fst modeInterv) (map fst mvInterv)
-                       (map fst spInterv)
-                       (map fst mvSat') (map fst cvAffBySat'))
-      (return $ zipWith8' BlcResult blcs
-                                    (map snd compliances)
-                                    (map snd qualities)
-                                    (map snd modeInterv)
-                                    (map snd mvInterv)
-                                    (map snd spInterv)
-                                    (map snd mvSat')
-                                    (map snd cvAffBySat'))
+      (and $ zipWith8'
+         (\ a b c d e f g h -> and $ map (== a) [b,c,d,e,f,g,h])
+         (map entityKey blcs) (map fst compliances) (map fst qualities)
+         (map fst modeInterv) (map fst mvInterv)
+         (map fst spInterv)
+         (map fst mvSat') (map fst cvAffBySat'))
+      (return $
+         sortOn (\ (BlcResult (Entity _ blc) _ _ _ _ _ _ _) -> blcName blc) $
+         zipWith8' BlcResult blcs (map snd compliances)
+                                  (map snd qualities)
+                                  (map snd modeInterv)
+                                  (map snd mvInterv)
+                                  (map snd spInterv)
+                                  (map snd mvSat')
+                                  (map snd cvAffBySat'))
 
 getCompliances :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Double)]
 getCompliances start end bids = do
