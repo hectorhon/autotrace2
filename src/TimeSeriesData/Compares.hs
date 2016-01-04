@@ -26,7 +26,7 @@ compares' [] blacks = [(interval, Nothing)]
         end      = timeOf $ fst (last blacks)
         interval = (start, end)
 
-compares' reds blacks = assert (t1 == t3) $
+compares' reds blacks = assert (near t1 t3) $
   case (v1, v2, v3, v4) of
     (Continuous y1, Continuous y2, Continuous y3, Continuous y4) ->
       let mIntersect = intersection
@@ -34,7 +34,7 @@ compares' reds blacks = assert (t1 == t3) $
                           ((realToFrac t3, y3), (realToFrac t4, y4))
                        >>= \ (t, y) -> return (realToFrac t, y)
           result = case mIntersect of
-                     Nothing      -> if y1 == y3
+                     Nothing      -> if near y1 y3
                                      then ((t1, min t2 t4),
                                            Just (compare y2 y4))
                                      else ((t1, min t2 t4),
@@ -94,10 +94,11 @@ compares' reds blacks = assert (t1 == t3) $
 intersection :: ((Double, Double), (Double, Double))
              -> ((Double, Double), (Double, Double))
              -> Maybe (Double, Double)
-intersection ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4)) =
-  if or [d == 0, s <= 0, s >= 1, t <= 0, t >= 1]
-  then Nothing  -- parallel / collinear / out of range
-  else Just (x, y)
+intersection ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4))
+  | or [near d 0, s < 0, s > 1, t < 0, t > 1] = Nothing
+  | near x1 x3 && near y1 y3 = Nothing
+  | near x2 x4 && near y2 y4 = Nothing
+  | otherwise = Just (x, y)
   where n = x1*(y2-y3) - x2*(y1-y3) + x3*(y1-y2)
         d = (x1-x2)*(y4-y3) + (x3-x4)*(y1-y2)
         t = n/d
@@ -113,9 +114,13 @@ compress (r:rs) = compress' r rs
 compress' :: (TSInterval, Maybe Ordering) -> [(TSInterval, Maybe Ordering)]
           -> [(TSInterval, Maybe Ordering)]
 compress' r'@((start', end'), o') (r@((start, end), o):[])
-  | (end' == start && o' == o) = [((start', end), o)]
+  | (near end' start && o' == o) = [((start', end), o)]
   | otherwise                  = [r', r]
 compress' r'@((start', end'), o') (r@((start, end), o):rs)
-  | (end' == start && o' == o) = compress' ((start', end), o) rs
+  | (near end' start && o' == o) = compress' ((start', end), o) rs
   | otherwise                  = r' : compress' r rs
 compress' _ _ = assert False undefined
+
+near :: RealFrac a => a -> a -> Bool
+near a b = if rel == 0 then True else (abs a - abs b) / rel < 0.001 
+  where rel = max (abs a) (abs b)
