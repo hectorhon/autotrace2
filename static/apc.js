@@ -208,7 +208,9 @@ cvExceeds.forEach(function(cve) {
     // Mark cv as has constrained in the all cvs collection
     _.find(cvs, function(cv) { return cv.id == cve.cv; }).constrained = true;
 });
-cvExceedsGrouped = [];
+cvExceedsGroupedEconomic = [];
+cvExceedsGroupedConstraint = [];
+cvExceedsGroupedProtective = [];
 for (var cvid in cvExceedsDictionary) {
     cvExceedsDictionary[cvid].forEach(function (exc) {
           exc.start = new Date(exc.start);
@@ -220,27 +222,41 @@ for (var cvid in cvExceedsDictionary) {
           exc.left = (exc.eStart - start) / duration * 800;
           exc.width = exc.eDuration / duration * 800;
     });
-    cvExceedsGrouped.push(cvExceedsDictionary[cvid]);
+    switch (_.find(cvs, function(cv) { return cv.id == cvid }).category) {
+        case "EconomicCv":
+            cvExceedsGroupedEconomic.push(cvExceedsDictionary[cvid]);
+            break;
+        case "ConstraintCv":
+            cvExceedsGroupedConstraint.push(cvExceedsDictionary[cvid]);
+            break;
+        case "ProtectiveCv":
+            cvExceedsGroupedProtective.push(cvExceedsDictionary[cvid]);
+            break;
+    }
 }
-
-var row = d3.select("#cv-exceeds").selectAll(".cv-exceed")
-    .data(cvExceedsGrouped).enter().append("svg")
-        .attr("class", "cv-exceed")
-        .attr("width", "800")
-        .attr("height", "22")
-        .attr("data-cvid", function(d) { return d[0].cv; });
-row.selectAll("rect").data(function(d) { return d || []; }) 
-    .enter().append("rect")
-        .attr("x", function(exc) { return exc.left; })
-        .attr("width", function(exc) { return exc.width; })
-        .attr("height", 22)
-        .attr("fill", "yellow");
-row.append("text")
-    .attr("x", 400)
-    .attr("y", 18)
-    .attr("font-size", 16)
-    .attr("text-anchor", "middle")
-    .text(function(d) { return _.findWhere(cvs, {id: d[0].cv}).name; });
+function renderCvBar(list, divId) {
+    var row = d3.select(divId).selectAll(".cv-exceed")
+        .data(list).enter().append("svg")
+            .attr("class", "cv-exceed")
+            .attr("width", "800")
+            .attr("height", "22")
+            .attr("data-cvid", function(d) { return d[0].cv; });
+    row.selectAll("rect").data(function(d) { return d || []; }) 
+        .enter().append("rect")
+            .attr("x", function(exc) { return exc.left; })
+            .attr("width", function(exc) { return exc.width; })
+            .attr("height", 22)
+            .attr("fill", "yellow");
+    row.append("text")
+        .attr("x", 400)
+        .attr("y", 18)
+        .attr("font-size", 16)
+        .attr("text-anchor", "middle")
+        .text(function(d) { return _.findWhere(cvs, {id: d[0].cv}).name; });
+}
+renderCvBar(cvExceedsGroupedEconomic, "#cv-exceeds-economic");
+renderCvBar(cvExceedsGroupedConstraint, "#cv-exceeds-constraint");
+renderCvBar(cvExceedsGroupedProtective, "#cv-exceeds-protective");
 
 $(".cv-exceed").click(function(e) {
     var id = $(e.currentTarget).attr("data-cvid");

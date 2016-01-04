@@ -75,6 +75,7 @@ share [ mkPersist sqlSettings,
     Cv json
       name         String
       apc          ApcId
+      category     CvType
       measTag      String
       srhTag       String
       srlTag       String
@@ -209,6 +210,10 @@ instance FromFormUrlEncoded Cv where
     apc     <- maybe (throwError "Missing or invalid apc")
                      (return)
                      (lookup "area" params >>= fromText)
+    category <- maybe (throwError "Missing or invalid category")
+                      (return . fst)
+                      (lookup "category" params
+                       >>= listToMaybe . reads . unpack)
     measTag <- maybe (throwError "Missing measurement tag")
                      (return . unpack)
                      (lookup "meastag" params)
@@ -224,7 +229,7 @@ instance FromFormUrlEncoded Cv where
     selTag  <- maybe (throwError "Missing selected tag")
                      (return . unpack)
                      (lookup "seltag" params)
-    return (Cv name apc measTag srhTag srlTag predTag selTag)
+    return (Cv name apc category measTag srhTag srlTag predTag selTag)
 
 instance FromFormUrlEncoded ApcIssue where
   fromFormUrlEncoded params = runExcept $ do

@@ -84,8 +84,15 @@ apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
   H.div ! Ha.id "uptimes" $ ""
   H.div ! Ha.id "issues" $ ""
   h2 ! Ha.style "text-align:center;" $ "CV constraints"
+  h3 ! Ha.style "text-align:center;" $ "Economic"
   timeScale start end
-  H.div ! Ha.id "cv-exceeds" $ ""
+  H.div ! Ha.id "cv-exceeds-economic" $ ""
+  h3 ! Ha.style "text-align:center;" $ "Constraint"
+  timeScale start end
+  H.div ! Ha.id "cv-exceeds-constraint" $ ""
+  h3 ! Ha.style "text-align:center;" $ "Protective"
+  timeScale start end
+  H.div ! Ha.id "cv-exceeds-protective" $ ""
   script $ toHtml $ L.unpack $
     L.concat [ "var start = new Date('", encode start, "');"
              , "var end = new Date('", encode end, "');"
@@ -172,6 +179,11 @@ apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
   field "Name"               "name"    cvName    mCv
   linkField "APC" (apcName apc) (viewApcLink (apcArea apc) aid)
   hiddenField "area" (show $ fromSqlKey aid)
+  selectField "Category" "category" cvCategory mCv
+    [ (EconomicCv  , "Economic"  )
+    , (ConstraintCv, "Constraint")
+    , (ProtectiveCv, "Protective")
+    ]
   field "Measurement tag"    "meastag" cvMeasTag mCv
   field "Set range high tag" "srhtag"  cvSrhTag  mCv
   field "Set range low tag"  "srltag"  cvSrlTag  mCv
