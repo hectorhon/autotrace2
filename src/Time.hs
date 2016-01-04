@@ -13,6 +13,7 @@ import Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B (ByteString, unpack)
 import Control.Exception (assert)
 import Control.Monad.Except
+import Control.Applicative ((<|>))
 import Data.Text (pack, unpack, append)
 
 -- * Time references
@@ -52,7 +53,7 @@ decodePGInterval :: B.ByteString -> Maybe NominalDiffTime
 decodePGInterval raw = maybeResult $ feed (parse p raw) "\n"
   where p = choice [p1, p2, p3]
         p1 = do d <- decimal :: Parser Int
-                _ <- string " days "
+                _ <- string " days " <|> string " day "
                 h <- decimal :: Parser Int
                 _ <- char ':'
                 m <- decimal :: Parser Int
@@ -65,7 +66,7 @@ decodePGInterval raw = maybeResult $ feed (parse p raw) "\n"
                   + realToFrac m * 60
                   + s
         p2 = do d <- decimal :: Parser Int
-                _ <- string " days"
+                _ <- string " days" <|> string " day"
                 _ <- endOfLine
                 return $ realToFrac (realToFrac d * 86400 :: Double)
         p3 = do h <- decimal :: Parser Int
