@@ -23,6 +23,7 @@ import Blc.API
 import Blc.Views
 import Blc.Queries
 import Blc.Calculate
+import Blc.Links
 import Area.Links
 import Common.Responses
 
@@ -33,6 +34,7 @@ blcSite = toCreateBlc
      :<|> updateBlc
      :<|> deleteBlc
      :<|> toCalculateBlc
+     :<|> calculateBlc
      :<|> viewBlcsPerformance
      :<|> viewBlcBadActors
      :<|> toCalculateAreaBlcs
@@ -84,6 +86,12 @@ toCalculateBlc pid bid mStart mEnd = do
                    (return . localDayToUTC)
                    mEnd
       return (blcCalculatePage start end blc)
+
+calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
+calculateBlc aid bid (start, end) = do
+  markCalculate (localDayToUTC start) (localDayToUTC end) bid
+  redirect (viewBlcLink' aid bid)
+  return undefined
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
