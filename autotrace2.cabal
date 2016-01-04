@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     TimeSeriesData, Time
+  exposed-modules:     TimeSeriesData, Time, Block.Parse, FileUpload
   other-modules:       TimeSeriesData.Types
                      , TimeSeriesData.Retrieve
                      , TimeSeriesData.Compares
