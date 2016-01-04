@@ -124,19 +124,27 @@ areaBlcPage start end
       a ! href (toCalculateAreaBlcsLink
                 aid (utcToLocalDay start) (utcToLocalDay end)) $ "Recalculate"
     h2 "Summary"
-    byAreasBlcResultTable [areaResult] 
-    p $ a ! href (viewBlcBadActorsLink
-                  aid (utcToLocalDay start) (utcToLocalDay end) 95 95)
-          $ "View all bad actors"
+    byAreasBlcResultTable start end [areaResult] 
+    p $ do
+      a ! href (viewBlcBadActorsLink
+                aid (utcToLocalDay start) (utcToLocalDay end) 95 95)
+        $ "View all bad actors"
+      case areaParent area of
+        Nothing -> return ()
+        Just parent -> do
+          H.span " "
+          a ! href (viewBlcsPerformanceLink parent
+                    (utcToLocalDay start) (utcToLocalDay end))
+            $ "Up one level"
     when (not $ null subareaResults) $ do
       h2 "Subareas"
-      byAreasBlcResultTable subareaResults
+      byAreasBlcResultTable start end subareaResults
     when (not $ null blcResults) $ do
       h2 "Controllers"
       blcsResultTable blcResults
 
-byAreasBlcResultTable :: [AreaResult] -> Html
-byAreasBlcResultTable results = table ! class_ "result-table" $ do
+byAreasBlcResultTable :: UTCTime -> UTCTime -> [AreaResult] -> Html
+byAreasBlcResultTable start end results = table ! class_ "result-table" $ do
   col ! class_ "result-table-col-1"
   col ! class_ "result-table-col-2"
   col ! class_ "result-table-col-3"
@@ -158,7 +166,8 @@ byAreasBlcResultTable results = table ! class_ "result-table" $ do
     (\ (AreaResult (Entity aid area) compliance quality blcCount
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) ->
       tr $ do
-        td $ a ! href (viewBlcsPerformanceDefaultDayLink aid)
+        td $ a ! href (viewBlcsPerformanceLink
+                       aid (utcToLocalDay start) (utcToLocalDay end))
                $ toHtml (areaName area)
         td $ bar "lightgreen" compliance blcCount (compliance `over` blcCount)
         td $ bar "lightblue" quality blcCount (quality `over` blcCount)

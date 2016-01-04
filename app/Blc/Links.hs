@@ -31,6 +31,12 @@ toCalculateBlcDefaultDayLink aid bid = stringValue $
 
 
 
+viewBlcsPerformanceLink :: Key Area -> Day -> Day -> AttributeValue
+viewBlcsPerformanceLink aid start end = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance) aid start end)
+
+
+
 viewBlcsPerformanceDefaultDayLink :: Key Area -> AttributeValue
 viewBlcsPerformanceDefaultDayLink aid = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance') aid)
