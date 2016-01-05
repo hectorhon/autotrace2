@@ -120,16 +120,18 @@ deleteButton :: String -> String -> Html
 deleteButton buttonId url = do
   button ! Ha.id (stringValue buttonId) $ "Delete"
   script $ toHtml $
-    " $('#"++buttonId++"').click(function(e) { \
-    \   e.preventDefault(); \
-    \   $.ajax({ \
-    \     method: 'DELETE', \
-    \     url: window.location, \
-    \     success: function() { \
-    \       window.location.replace('"++ url ++"'); \
-    \     } \
-    \   }) \
-    \ }); "
+    " $('#"++buttonId++"').click(function(e) {                \
+    \   e.preventDefault();                                   \
+    \   if (confirm('Permanently delete this item?')) {       \
+    \     $.ajax({                                            \
+    \       method: 'DELETE',                                 \
+    \       url: window.location,                             \
+    \       success: function() {                             \
+    \         window.location.replace('"++ url ++"');         \
+    \       }                                                 \
+    \     })                                                  \
+    \   }                                                     \
+    \ });                                                     "
 
 datepicker :: String -> String -> String -> Html
 datepicker fieldId fieldName fieldValue = do

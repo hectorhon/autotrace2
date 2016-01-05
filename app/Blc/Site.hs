@@ -71,7 +71,7 @@ updateBlc pid bid blc = do
 
 deleteBlc :: Key Area -> Key Blc -> AppM Text
 deleteBlc pid bid = do
-  runDb $ deleteWhere [BlcArea ==. pid, BlcId ==. bid]
+  runDb $ deleteCascadeWhere [BlcArea ==. pid, BlcId ==. bid]
   return "deleted"
 
 toCalculateBlc :: Key Area -> Key Blc -> Maybe Day -> Maybe Day -> AppM Html
