@@ -199,7 +199,9 @@ blcsResultTable results = table ! class_ "result-table" $ do
   forM_ results
     (\ (BlcResult (Entity bid blc) compliance quality
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) -> tr $ do
-      td $ a ! href (viewBlcLink (blcArea blc) bid) $ toHtml (blcName blc)
+      td $ a ! href (viewBlcLink (blcArea blc) bid)
+             ! Ha.title (stringValue $ blcDescription blc)
+             $ toHtml (blcName blc)
       td $ bar "lightgreen" compliance 1 ""
       td $ bar "lightblue" quality 1 ""
       td $ toHtml (show modeIntervCount)
