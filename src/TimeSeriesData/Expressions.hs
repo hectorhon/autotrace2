@@ -39,119 +39,67 @@ parseExpression = parse expr "Invalid expression"
 
 expr :: forall s u (m :: * -> *) . Stream s m Char
      => ParsecT s u m Expression
-expr = do e <- choice [try and, try or, try clause]
+expr = do e <- logical
           eof
           return e
 
-and :: forall s u (m :: * -> *) . Stream s m Char
-    => ParsecT s u m Expression
-and = do c1 <- clause
-         _  <- (string "and") <|> (string "AND")
-         c2 <- choice [try and, try or, try clause]
-         return $ TknAnd c1 c2
+logical :: forall s u (m :: * -> *) . Stream s m Char
+        => ParsecT s u m Expression
+logical = chainl1 (logical' <|> comparison) op
+  where op = (string "and" <|> string "AND" <|> string "or" <|> string "OR")
+             >>= \ sym -> case sym of "and" -> return TknAnd
+                                      "AND" -> return TknAnd
+                                      "or"  -> return TknOr
+                                      "OR"  -> return TknOr
+                                      _     -> undefined
 
-or :: forall s u (m :: * -> *) . Stream s m Char
-   => ParsecT s u m Expression
-or = do c1 <- clause
-        _  <- (string "or") <|> (string "OR")
-        c2 <- choice [try and, try or, try clause]
-        return $ TknOr c1 c2
-
-
-
--- |A clause represents a collection of bools
-clause :: forall s u (m :: * -> *) . Stream s m Char
-       => ParsecT s u m Expression
-clause = choice [ try moreThan, try moreEqThan
-                , try lessThan, try lessEqThan
-                , try equals  , try notEquals  ]
-
-moreThan :: forall s u (m :: * -> *) . Stream s m Char
+logical' :: forall s u (m :: * -> *) . Stream s m Char
          => ParsecT s u m Expression
-moreThan = do t1 <- term'
-              _  <- char '>'
-              t2 <- term'
-              return $ TknMoreThan t1 t2
+logical' = do _ <- try $ spaces >> char '(' >> spaces
+              a <- try logical
+              _ <- try $ spaces >> char ')' >> spaces
+              return a
 
-moreEqThan :: forall s u (m :: * -> *) . Stream s m Char
+
+comparison :: forall s u (m :: * -> *) . Stream s m Char
            => ParsecT s u m Expression
-moreEqThan = do t1 <- term'
-                _  <- string ">="
-                t2 <- term'
-                return $ TknMoreEqThan t1 t2
-
-lessThan :: forall s u (m :: * -> *) . Stream s m Char
-         => ParsecT s u m Expression
-lessThan = do t1 <- term'
-              _  <- char '<'
-              t2 <- term'
-              return $ TknLessThan t1 t2
-
-lessEqThan :: forall s u (m :: * -> *) . Stream s m Char
-           => ParsecT s u m Expression
-lessEqThan = do t1 <- term'
-                _  <- string "<="
-                t2 <- term'
-                return $ TknLessEqThan t1 t2
-
-equals :: forall s u (m :: * -> *) . Stream s m Char
-       => ParsecT s u m Expression
-equals = do t1 <- term'
-            _  <- char '='
-            t2 <- term'
-            return $ TknEquals t1 t2
-
-notEquals :: forall s u (m :: * -> *) . Stream s m Char
-          => ParsecT s u m Expression
-notEquals = do t1 <- term'
-               _  <- string "!="
-               t2 <- term'
-               return $ TknNotEquals t1 t2
-
-
-
--- |A term' represents a collection of values, processed for arithmetic
-term' :: forall s u (m :: * -> *) . Stream s m Char
-      => ParsecT s u m Expression
-term' = do spaces
-           t <- choice [ try add, try minus, try self ]
-           spaces
-           return t
-
-add :: forall s u (m :: * -> *) . Stream s m Char
-    => ParsecT s u m Expression
-add = do t1 <- choice [ try tagName, try num ]
-         _  <- char '+'
-         t2 <- choice [ try tagName, try num ]
-         return $ TknAdd t1 t2
-
-minus :: forall s u (m :: * -> *) . Stream s m Char
-      => ParsecT s u m Expression
-minus = do t1 <- choice [ try tagName, try num ]
-           _  <- char '-'
-           t2 <- choice [ try tagName, try num ]
-           return $ TknMinus t1 t2
-
-self :: forall s u (m :: * -> *) . Stream s m Char
-     => ParsecT s u m Expression
-self = term
-
-
+comparison = do t1 <- term
+                sym <-     try (string ">=")
+                       <|> try (string "<=")
+                       <|> try (string "!=")
+                       <|> try (string ">")
+                       <|> try (string "<")
+                       <|> try (string "=")
+                t2 <- term
+                let op = case sym of ">"  -> TknMoreThan
+                                     ">=" -> TknMoreEqThan
+                                     "<"  -> TknLessThan
+                                     "<=" -> TknLessEqThan
+                                     "="  -> TknEquals
+                                     "!=" -> TknNotEquals
+                                     _    -> undefined
+                return (op t1 t2)
 
 -- |A term represents a collection of values
 term :: forall s u (m :: * -> *) . Stream s m Char
      => ParsecT s u m Expression
 term = do spaces
-          t <- choice [ try tagName, try num, try str ]
+          t <- try arith <|> tagName <|> num <|> str
           spaces
           return t
 
+arith :: forall s u (m :: * -> *) . Stream s m Char
+           => ParsecT s u m Expression
+arith = chainl1 (tagName <|> num) op
+  where op = do sym <- oneOf "+-"
+                return $ case sym of '+' -> TknAdd
+                                     '-' -> TknMinus
+                                     _   -> undefined
+
 tagName :: forall s u (m :: * -> *) . Stream s m Char
         => ParsecT s u m Expression
-tagName = do _  <- char '['
-             tn <- many1 (alphaNum <|> oneOf "._")
-             _  <- char ']'
-             return $ TknTagName tn
+tagName = between (char '[') (char ']') (many1 $ alphaNum <|> oneOf "._")
+          >>= return . TknTagName
 
 num :: forall s u (m :: * -> *) . Stream s m Char
     => ParsecT s u m Expression
@@ -167,10 +115,7 @@ num = integer <++> decimal <++> expo >>= return . TknNumber . read
 
 str :: forall s u (m :: * -> *) . Stream s m Char
     => ParsecT s u m Expression
-str = do _ <- char '"'
-         s <- many letter
-         _ <- char '"'
-         return $ TknString s
+str = between (char '"') (char '"') (many letter) >>= return . TknString
 
 listTags :: Expression -> [String]
 listTags (TknMoreThan c1 c2) = concat [listTags c1, listTags c2]
