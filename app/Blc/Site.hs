@@ -89,10 +89,13 @@ toCalculateBlc pid bid mStart mEnd = do
       return (blcCalculatePage start end blc)
 
 calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
-calculateBlc aid bid (start, end) = do
-  B.markCalculate (localDayToUTC start) (localDayToUTC end) bid
-  redirect (viewBlcLink' aid bid)
-  return undefined
+calculateBlc aid bid (start, end) =
+  let start' = localDayToUTC start
+      end'   = localDayToUTC end
+  in do A.markCalculateASD start' end' aid
+        B.markCalculate start' end' bid
+        redirect (viewBlcLink' aid bid)
+        return undefined
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
