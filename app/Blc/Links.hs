@@ -35,12 +35,13 @@ viewBlcsPerformanceLink :: Key Area -> Day -> Day -> AttributeValue
 viewBlcsPerformanceLink aid start end = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance) aid start end)
 
-
+viewBlcsPerformanceDefaultDayLink' :: Key Area -> String
+viewBlcsPerformanceDefaultDayLink' aid =
+  "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance') aid)
 
 viewBlcsPerformanceDefaultDayLink :: Key Area -> AttributeValue
 viewBlcsPerformanceDefaultDayLink aid = stringValue $
-  "/" ++ show (linkTo (Proxy :: Proxy ViewBlcsPerformance') aid)
-
+  viewBlcsPerformanceDefaultDayLink' aid
 
 
 viewBlcBadActorsLink :: Key Area -> Day -> Day -> Double -> Double

@@ -39,7 +39,6 @@ blcCalculatePage start end (Entity bid blc) =
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
-      cancelButton "blc-calculate-cancel-button"
 
 areaBlcCalculatePage :: UTCTime -> UTCTime -> Entity Area -> Html
 areaBlcCalculatePage start end (Entity aid area) =
@@ -58,7 +57,6 @@ areaBlcCalculatePage start end (Entity aid area) =
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
-      cancelButton "area-blc-calculate-cancel-button"
 
 areaBlcBadActorsPage :: UTCTime -> UTCTime -> Entity Area -> Double -> Double
                      -> [(Entity Blc, Double)] -> [(Entity Blc, Double)]
@@ -238,5 +236,6 @@ blcForm (Entity pid parent) mBlc = H.form ! method "post" $ do
   field       "Calc. SP interv. when" "calcspicond" blcCalcSpICond   mBlc
   button "Save"
   maybe (return ())
-        (deleteButton "blc-delete-button" . viewAreaLink' . blcArea) mBlc
-  cancelButton "blc-cancel-button"
+        (deleteButton "blc-delete-button"
+         . viewBlcsPerformanceDefaultDayLink' . blcArea)
+        mBlc

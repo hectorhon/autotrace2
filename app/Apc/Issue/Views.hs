@@ -112,7 +112,6 @@ apcIssueForm (Entity aid apc) mIssue categories = H.form ! method "post" $ do
     Right issue -> (deleteButton "apc-issue-delete-button"
                     . viewApcIssuesLink' (apcArea apc) . apcIssueApc) issue
     _           -> return ()
-  cancelButton "apc-issue-cancel-button"
 
 eitherToMaybe :: Either a b -> Maybe b
 eitherToMaybe = either (\ _ -> Nothing) Just

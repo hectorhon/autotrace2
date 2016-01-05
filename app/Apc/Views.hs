@@ -38,7 +38,8 @@ apcsPage apcs = layout "APC list" $ do
   h1 "Select an APC"
   ul $ do
     forM_ apcs (\ (Entity aid apc) -> li $
-      a ! href (viewApcLink (apcArea apc) aid) $ toHtml (apcName apc))
+      a ! href (viewApcPerformanceDefaultDayLink (apcArea apc) aid)
+        $ toHtml (apcName apc))
   p $ do
     H.span "To create a new APC, select the specific area "
     a ! href viewAreasLink $ "here"
@@ -57,7 +58,6 @@ apcCalculatePage start end (Entity aid apc) =
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
-      cancelButton "apc-calculate-cancel-button"
 
 apcPerformancePage :: Entity Apc -> UTCTime -> UTCTime
                    -> [Entity ApcInterval] -> [Entity ApcIssue]
@@ -172,7 +172,6 @@ apcForm (Entity pid parent) mApc = H.form ! method "post" $ do
   button "Save"
   maybe (return ())
         (deleteButton "apc-delete-button" . viewAreaLink' . apcArea) mApc
-  cancelButton "apc-cancel-button"
 
 apcCvForm :: Entity Apc -> Maybe Cv -> Html
 apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
@@ -193,4 +192,3 @@ apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
   maybe (return ())
         (deleteButton "apc-cv-delete-button"
         . viewApcLink' (apcArea apc) . cvApc) mCv
-  cancelButton "apc-cv-cancel-button"

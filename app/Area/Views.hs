@@ -69,6 +69,4 @@ areaForm mParent mArea = let Entity kParent parent = fromJust mParent in
       hiddenField "parent" (show $ fromSqlKey kParent)
     field "Demand condition" "demandcond"  areaDemandCond  mArea
     button "Save"
-    if isJust mArea
-    then deleteButton "area-delete-button" viewAreasLink'
-    else cancelButton "area-cancel-button"
+    when (isJust mArea) (deleteButton "area-delete-button" viewAreasLink')

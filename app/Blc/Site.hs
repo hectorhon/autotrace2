@@ -66,7 +66,7 @@ updateBlc :: Key Area -> Key Blc -> Blc -> AppM Text
 updateBlc pid bid blc = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   if isNothing mBlc then (lift $ left err404) else runDb (replace bid blc)
-  redirect (viewAreaLink' pid)
+  redirect (viewBlcsPerformanceDefaultDayLink' pid)
   return undefined
 
 deleteBlc :: Key Area -> Key Blc -> AppM Text
