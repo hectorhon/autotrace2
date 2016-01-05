@@ -60,44 +60,13 @@ areaNavigation aid = navigation
 
 
 areaForm :: Maybe (Entity Area) -> Maybe Area -> Html
-areaForm mParent mArea = let
-  Entity kParent parent = fromJust mParent
-  pid = show (fromSqlKey kParent)
-  in H.form ! method "post" $ do
-        H.label $ do
-          H.span "Name"
-          input ! Ha.name "name"
-                ! Ha.value (stringValue (maybe "" areaName mArea))
-        H.label $ do
-          H.span "Description"
-          input ! Ha.name "description"
-                ! Ha.value (stringValue (maybe "" areaDescription mArea))
-        when (isJust mParent) (do
-          H.label $ do
-            H.span "Parent"
-            a ! class_ "input-link"
-              ! href (viewAreaLink $ entityKey $ fromJust mParent)
-              $ toHtml (areaName parent)
-          input ! Ha.name "parent"
-                ! Ha.type_ "hidden"
-                ! Ha.value (stringValue pid))
-        button "Save"
-        if isJust mArea then do
-          button ! Ha.id "area-delete-button" $ "Delete"
-          script $ toHtml $
-            " $('#area-delete-button').click(function(e) { \
-            \   e.preventDefault(); \
-            \   $.ajax({ \
-            \     method: 'DELETE', \
-            \     url: window.location, \
-            \     success: function() { \
-            \       window.location.replace('"++viewAreasLink'++"'); \
-            \     } \
-            \   }) \
-            \ }); "
-        else do
-          button ! Ha.id "area-cancel-button" $ "Cancel"
-          script " $('#area-cancel-button').click(function(e) { \
-                 \   e.preventDefault(); \
-                 \   window.location.href = document.referrer; \
-                 \ }); "
+areaForm mParent mArea = let Entity kParent parent = fromJust mParent in
+  H.form ! method "post" $ do
+    field "Name"             "name"        areaName        mArea
+    field "Description"      "description" areaDescription mArea
+    when (isJust mParent) $ do
+      linkField   "Parent" (areaName parent) (viewAreaLink kParent)
+      hiddenField "parent" (show $ fromSqlKey kParent)
+    field "Demand condition" "demandcond"  areaDemandCond  mArea
+    button "Save"
+    when (isJust mArea) (deleteButton "area-delete-button" viewAreasLink')

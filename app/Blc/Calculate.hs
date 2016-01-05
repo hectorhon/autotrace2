@@ -14,12 +14,13 @@ import AppM
 import Config
 import Schema
 import Time
+import Area.Queries.IntervalsDuring
 
 data CalcOpts = CalcOpts String Int UTCTime UTCTime
 
 markCalculate :: UTCTime -> UTCTime -> Key Blc -> AppM ()
 markCalculate start end bid = do
-  qsem    <- asks getQSem
+  qsemn   <- asks getQSemN
   counter <- asks getCounter
   src     <- asks getSrcUrl
   port    <- asks getSrcPort
@@ -30,22 +31,27 @@ markCalculate start end bid = do
     Nothing -> return ()
     Just blc -> do
       let eb = Entity bid blc
-      _ <- liftIO $ forkIO $ calculateThread qsem counter calcOpts connStr eb
+      _ <- liftIO $ forkIO $ calculateThread qsemn counter calcOpts connStr eb
       return ()
 
-calculateThread :: QSem -> MVar Int -> CalcOpts -> ByteString -> Entity Blc
+calculateThread :: QSemN -> MVar Int -> CalcOpts -> ByteString -> Entity Blc
                 -> IO ()
-calculateThread qsem counter calcOpts connStr (Entity kBlc blc) = do
+calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
   -- Acquire lock
-  waitQSem qsem
+  waitQSemN qsemn 1
   modifyMVar_ counter (return . (+) 1)
+  -- Get area demand state
+  let CalcOpts _ _ start end = calcOpts
+  areaDemand <- runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT
+    (intervalsDuring start end Demand $ blcArea blc)
   -- Perform the calculations
   (demand, uptimeDemand, uptime, performUptime, mvInterv, spInterv,
    mvSat, cvAffBySat) <- (flip runReaderT) calcOpts $ do
     let filterCounts n = map fst . filter ((== n) . snd)
     demand   <- calcInterval (blcDemandCond blc)
+    let demand' = filterCounts 2 $ counts [areaDemand, demand]
     uptime   <- calcInterval (blcUptimeCond blc)
-    let uptimeDemand = filterCounts 2 $ counts [demand, uptime]
+    let uptimeDemand = filterCounts 2 $ counts [demand', uptime]
     perform  <- calcInterval $
       let margin  = show $ blcMargin blc
           measTag = blcMeasTag blc
@@ -68,10 +74,9 @@ calculateThread qsem counter calcOpts connStr (Entity kBlc blc) = do
                           , "[", outTag, "]<=", outMin ]
     let notPerform = filterCounts 2 $ counts [perform]
     let cvAffBySat = filterCounts 2 $ counts [notPerform, mvSat]
-    return (demand, uptimeDemand, uptime, performUptime,
+    return (demand', uptimeDemand, uptime, performUptime,
             mvInterv, spInterv, mvSat, cvAffBySat)
   -- Write to database
-  let CalcOpts _ _ start end = calcOpts
   let cleanRange' = cleanRange start end kBlc
   let writeIntervals' = writeIntervals start end kBlc
   runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT (do
@@ -95,7 +100,7 @@ calculateThread qsem counter calcOpts connStr (Entity kBlc blc) = do
     )
   -- Release lock
   modifyMVar_ counter (return . (flip (-)) 1)
-  signalQSem qsem
+  signalQSemN qsemn 1
 
 calcInterval :: String -> ReaderT CalcOpts IO [TSInterval]
 calcInterval condition = case parseExpression condition of

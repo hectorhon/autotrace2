@@ -25,6 +25,7 @@ getResult start end aid = do
     Just areaResult -> do
       subareas <- runDb $ select $ from $ \ a -> do
         where_ (a ^. AreaParent ==. val (Just aid))
+        orderBy [asc (a ^. AreaName)]
         return (a ^. AreaId)
       subareaResults <- mapM (getAreaResult start end) (map unValue subareas)
       blcResults <- getChildBlcResult start end aid

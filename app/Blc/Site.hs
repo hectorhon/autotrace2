@@ -22,9 +22,10 @@ import Time
 import Blc.API
 import Blc.Views
 import Blc.Queries
-import Blc.Calculate
+import Blc.Calculate as B
 import Blc.Links
 import Area.Links
+import Area.Calculate as A
 import Common.Responses
 
 blcSite :: ServerT BlcSite AppM
@@ -65,12 +66,12 @@ updateBlc :: Key Area -> Key Blc -> Blc -> AppM Text
 updateBlc pid bid blc = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   if isNothing mBlc then (lift $ left err404) else runDb (replace bid blc)
-  redirect (viewAreaLink' pid)
+  redirect (viewBlcsPerformanceDefaultDayLink' pid)
   return undefined
 
 deleteBlc :: Key Area -> Key Blc -> AppM Text
 deleteBlc pid bid = do
-  runDb $ deleteWhere [BlcArea ==. pid, BlcId ==. bid]
+  runDb $ deleteCascadeWhere [BlcArea ==. pid, BlcId ==. bid]
   return "deleted"
 
 toCalculateBlc :: Key Area -> Key Blc -> Maybe Day -> Maybe Day -> AppM Html
@@ -88,10 +89,13 @@ toCalculateBlc pid bid mStart mEnd = do
       return (blcCalculatePage start end blc)
 
 calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
-calculateBlc aid bid (start, end) = do
-  markCalculate (localDayToUTC start) (localDayToUTC end) bid
-  redirect (viewBlcLink' aid bid)
-  return undefined
+calculateBlc aid bid (start, end) =
+  let start' = localDayToUTC start
+      end'   = localDayToUTC end
+  in do A.markCalculateASD start' end' aid
+        B.markCalculate start' end' bid
+        redirect (viewBlcLink' aid bid)
+        return undefined
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
@@ -151,8 +155,11 @@ toCalculateAreaBlcs aid mStart mEnd = do
       return (areaBlcCalculatePage start end area)
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
-calculateAreaBlcs aid (start, end) = do
-  bids <- descendantBlcsOf aid
-  forM_ bids (markCalculate (localDayToUTC start) (localDayToUTC end))
-  redirect (viewAreaLink' aid)
-  return undefined
+calculateAreaBlcs aid (start, end) =
+  let start' = localDayToUTC start
+      end'   = localDayToUTC end
+  in do bids <- descendantBlcsOf aid
+        A.markCalculateASD start' end' aid
+        forM_ bids (B.markCalculate start' end')
+        redirect (viewAreaLink' aid)
+        return undefined

@@ -32,6 +32,12 @@ share [ mkPersist sqlSettings,
       name         String
       description  String
       parent       AreaId Maybe
+      demandCond   String
+    AreaInterval
+      area         AreaId
+      start        UTCTime
+      end          UTCTime
+      category     MetricType
     Blc
       name         String
       description  String
@@ -133,7 +139,10 @@ instance FromFormUrlEncoded Area where
     description <- maybe (throwError "Missing description")
                          (return . unpack)
                          (lookup "description" params)
-    return (Area name description mParent)
+    demandCond <- maybe (throwError "Missing demand condition")
+                        (return . unpack)
+                        (lookup "demandcond" params)
+    return (Area name description mParent demandCond)
 
 instance FromFormUrlEncoded Blc where
   fromFormUrlEncoded params = runExcept $ do

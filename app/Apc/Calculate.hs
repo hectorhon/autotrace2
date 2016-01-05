@@ -19,19 +19,19 @@ data CalcOpts = CalcOpts String Int UTCTime UTCTime
 
 markCalculate :: UTCTime -> UTCTime -> Entity Apc -> AppM ()
 markCalculate start end apc = do
-  qsem    <- asks getQSem
+  qsemn   <- asks getQSemN
   counter <- asks getCounter
   src     <- asks getSrcUrl
   port    <- asks getSrcPort
   connStr <- asks getPoolConnStr
   let calcOpts = CalcOpts src port start end
-  _       <- liftIO $ forkIO $ calculateThread qsem counter calcOpts connStr apc
+  _ <- liftIO $ forkIO $ calculateThread qsemn counter calcOpts connStr apc
   return ()
 
-calculateThread :: QSem -> MVar Int -> CalcOpts -> ByteString -> Entity Apc
+calculateThread :: QSemN -> MVar Int -> CalcOpts -> ByteString -> Entity Apc
                 -> IO ()
-calculateThread qsem counter calcOpts connStr (Entity aid apc) = do
-  waitQSem qsem
+calculateThread qsemn counter calcOpts connStr (Entity aid apc) = do
+  waitQSemN qsemn 1
   modifyMVar_ counter (return . (+) 1)
   uptime <- runReaderT (calcInterval $ apcUptimeCond apc) calcOpts
   let CalcOpts _ _ start end = calcOpts
@@ -47,7 +47,7 @@ calculateThread qsem counter calcOpts connStr (Entity aid apc) = do
     mapM_ (uncurry (writeIntervalsCv start end Exceed)) (zip cids cvExceeds)
     )
   modifyMVar_ counter (return . (flip (-)) 1)
-  signalQSem qsem
+  signalQSemN qsemn 1
 
 calcInterval :: String -> ReaderT CalcOpts IO [TSInterval]
 calcInterval condition = case parseExpression condition of
