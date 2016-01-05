@@ -51,6 +51,8 @@ executable autotrace2-exe
                      , Area.Links
                      , Area.Site
                      , Area.Views
+                     , Area.Calculate
+                     , Area.Queries.IntervalsDuring
                      , Blc.API
                      , Blc.Links
                      , Blc.Site
@@ -70,6 +72,10 @@ executable autotrace2-exe
                      , Apc.Issue.Links
                      , Apc.Issue.Site
                      , Apc.Issue.Views
+                     , Block.API
+                     , Block.Links
+                     , Block.Site
+                     , Block.Views
                      , Common.Links
                      , Common.Responses
                      , Common.Views

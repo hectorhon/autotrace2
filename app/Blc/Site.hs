@@ -22,9 +22,10 @@ import Time
 import Blc.API
 import Blc.Views
 import Blc.Queries
-import Blc.Calculate
+import Blc.Calculate as B
 import Blc.Links
 import Area.Links
+import Area.Calculate as A
 import Common.Responses
 
 blcSite :: ServerT BlcSite AppM
@@ -89,7 +90,7 @@ toCalculateBlc pid bid mStart mEnd = do
 
 calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
 calculateBlc aid bid (start, end) = do
-  markCalculate (localDayToUTC start) (localDayToUTC end) bid
+  B.markCalculate (localDayToUTC start) (localDayToUTC end) bid
   redirect (viewBlcLink' aid bid)
   return undefined
 
@@ -151,8 +152,11 @@ toCalculateAreaBlcs aid mStart mEnd = do
       return (areaBlcCalculatePage start end area)
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
-calculateAreaBlcs aid (start, end) = do
-  bids <- descendantBlcsOf aid
-  forM_ bids (markCalculate (localDayToUTC start) (localDayToUTC end))
-  redirect (viewAreaLink' aid)
-  return undefined
+calculateAreaBlcs aid (start, end) =
+  let start' = localDayToUTC start
+      end'   = localDayToUTC end
+  in do bids <- descendantBlcsOf aid
+        A.markCalculateASD start' end' aid
+        forM_ bids (B.markCalculate start' end')
+        redirect (viewAreaLink' aid)
+        return undefined

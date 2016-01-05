@@ -44,7 +44,8 @@ main = do
   connString <- openFile "connString.set" ReadMode >>= hGetLine
   connPool   <- runNoLoggingT $ createPostgresqlPool (pack connString) 5
   caching    <- initCaching PublicStaticCaching
-  qsem       <- newQSem 10
+  let maxQSemN = 10
+  qsemn      <- newQSemN maxQSemN
   counter    <- newMVar 0
   srcFile    <- openFile "dataSource.set" ReadMode
   srcUrl     <- hGetLine srcFile
@@ -52,8 +53,9 @@ main = do
   run 3000 $ staticPolicy' caching (addBase "static")
            $ app defaultConfig { getPool = connPool
                                , getPoolConnStr = pack connString
-                               , getQSem = qsem
+                               , getQSemN = qsemn
                                , getCounter = counter
                                , getSrcUrl = srcUrl
                                , getSrcPort = srcPort
+                               , getMaxQSemN = maxQSemN
                                }
