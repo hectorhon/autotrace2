@@ -49,6 +49,5 @@ durations start end bids metricType =
       return (i ^. BlcIntervalBlc, sum_ (e -. s))
     let outside' = fromAscList (map encode outside)
     let def = fromList $ zip (map (fromIntegral . fromSqlKey) bids) (repeat 0)
-    let d a b = if b /= 0 then a / b else 1
-    let result = union (unionWith d within' outside') def
+    let result = union (unionWith (+) within' outside') def
     return $ map (\ (k, v) -> (toSqlKey (fromIntegral k), v)) (toAscList result)
