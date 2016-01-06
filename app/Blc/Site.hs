@@ -7,7 +7,7 @@
 module Blc.Site where
 
 import Servant
-import Text.Blaze.Html5 hiding (area)
+import Text.Blaze.Html5 hiding (area, map)
 import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
@@ -130,8 +130,14 @@ viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
       qualities <- getQualities start end bids
       let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
       let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
-      let badComplies = filter ((< complianceTarget) . snd) compliances
-      let badQualities = filter ((< qualityTarget) . snd) qualities
+      let badComplies = catMaybes $ flip map compliances $ \ (k, mv) -> do
+            case mv of Nothing -> Nothing
+                       Just v  -> if v < complianceTarget then Just (k, v)
+                                  else Nothing
+      let badQualities = catMaybes $ flip map qualities $ \ (k, mv) ->
+            case mv of Nothing -> Nothing
+                       Just v  -> if v < qualityTarget then Just (k, v)
+                                  else Nothing
       let getBlc (bid, v) = runDb (get bid)
             >>= maybe (return Nothing)
                       (\ blc -> return (Just (Entity bid blc, v)))

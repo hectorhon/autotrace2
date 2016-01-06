@@ -2,7 +2,7 @@
 
 module Blc.Views where
 
-import Text.Blaze.Html5 as H hiding (area)
+import Text.Blaze.Html5 as H hiding (area, q)
 import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
 import Data.List (sortOn)
@@ -200,8 +200,12 @@ blcsResultTable results = table ! class_ "result-table" $ do
       td $ a ! href (viewBlcLink (blcArea blc) bid)
              ! Ha.title (stringValue $ blcDescription blc)
              $ toHtml (blcName blc)
-      td $ bar "lightgreen" compliance 1 ""
-      td $ bar "lightblue" quality 1 ""
+      case compliance of
+        Just c  -> td $ bar "lightgreen" c          1 ""
+        Nothing -> td $ bar "green"      (1 :: Int) 1 ""
+      case quality of
+        Just q  -> td $ bar "lightblue" q          1 ""
+        Nothing -> td $ bar "blue"      (1 :: Int) 1 ""
       td $ toHtml (show modeIntervCount)
       td $ toHtml (show mvIntervCount)
       td $ toHtml (show spIntervCount)

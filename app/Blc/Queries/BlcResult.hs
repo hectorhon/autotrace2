@@ -18,13 +18,13 @@ import Schema
 
 data BlcResult =
   BlcResult (Entity Blc)
-            Double        -- ^ Compliance
-            Double        -- ^ Quality
-            Int           -- ^ Mode intervention
-            Int           -- ^ MV intervention
-            Int           -- ^ SP intervention
-            Double        -- ^ MV saturation
-            Double        -- ^ CV affected by saturation
+            (Maybe Double)  -- ^ Compliance
+            (Maybe Double)  -- ^ Quality
+            Int             -- ^ Mode intervention
+            Int             -- ^ MV intervention
+            Int             -- ^ SP intervention
+            Double          -- ^ MV saturation
+            Double          -- ^ CV affected by saturation
 
 getChildBlcResult :: UTCTime -> UTCTime -> Key Area -> AppM [BlcResult]
 getChildBlcResult start end aid =
@@ -62,22 +62,26 @@ getChildBlcResult start end aid =
                                   (map snd mvSat')
                                   (map snd cvAffBySat'))
 
-getCompliances :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Double)]
+getCompliances :: UTCTime -> UTCTime -> [Key Blc]
+               -> AppM [(Key Blc, Maybe Double)]
 getCompliances start end bids = do
   uptimeDemands <- durations start end bids UptimeDemand
   demands <- durations start end bids Demand
   let d (k1, n1) (k2, n2) = assert (k1 == k2) $
-                            if n2 /= 0 then (k1, realToFrac $ n1/n2) else (k1,1)
+                            if n2 /= 0 then (k1, Just $ realToFrac $ n1/n2)
+                            else (k1, Nothing)
   let compliances = assert (length uptimeDemands == length demands) $
                     zipWith d uptimeDemands demands
   return compliances
 
-getQualities :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Double)]
+getQualities :: UTCTime -> UTCTime -> [Key Blc]
+             -> AppM [(Key Blc, Maybe Double)]
 getQualities start end bids = do
   performUptimes <- durations start end bids PerformUptime
   uptimes <- durations start end bids Uptime
   let d (k1, n1) (k2, n2) = assert (k1 == k2) $
-                            if n2 /= 0 then (k1, realToFrac $ n1/n2) else (k1,1)
+                            if n2 /= 0 then (k1, Just $ realToFrac $ n1/n2)
+                            else (k1, Nothing)
   let qualities = assert (length performUptimes == length uptimes) $
                   zipWith d performUptimes uptimes
   return qualities
