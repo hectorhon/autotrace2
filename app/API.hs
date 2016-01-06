@@ -12,6 +12,7 @@ import Blc.API
 import Apc.API
 import Apc.Issue.API
 import Block.API
+import Search.API
 
 type Site = "migrate" :> Post '[PlainText] Text
        :<|> Get '[HTML] Html
@@ -20,3 +21,4 @@ type Site = "migrate" :> Post '[PlainText] Text
        :<|> ApcSite
        :<|> ApcIssueSite
        :<|> BlockSite
+       :<|> SearchSite
