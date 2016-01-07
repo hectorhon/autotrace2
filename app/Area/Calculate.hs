@@ -32,9 +32,13 @@ markCalculateASD start end aid = do
   maxQSemN <- asks getMaxQSemN
   let calcOpts = CalcOpts src port start end
   orderedTargetAreas <- getASD aid
-  forM_ orderedTargetAreas $ \ area -> liftIO $ forkIO $ do
-    _ <- calculateThread qsemn maxQSemN counter calcOpts connStr area
-    return ()
+  _ <- liftIO $ forkIO $ do
+    waitQSemN qsemn maxQSemN
+    modifyMVar_ counter (return . (+) 1)
+    forM_ orderedTargetAreas $ \ area -> calculate calcOpts connStr area
+    modifyMVar_ counter (return . (flip (-)) 1)
+    signalQSemN qsemn maxQSemN
+  return ()
 
 -- | Gets ancestors, self, and descendants, in that order
 getASD :: Key Area -> AppM [Entity Area]
@@ -53,13 +57,8 @@ getASD area = runDb $ rawSql
       map (\ (Single l, Single i, Single n, Single d, Single p, Single dc) ->
              let ll = l :: Int in Entity i (Area n d p dc))
 
-calculateThread :: QSemN -> Int -> MVar Int -> CalcOpts -> ByteString
-                -> Entity Area
-                -> IO ()
-calculateThread qsemn maxQSemN counter calcOpts connStr (Entity aid area) = do
-  -- Acquire lock
-  waitQSemN qsemn maxQSemN 
-  modifyMVar_ counter (return . (+) 1)
+calculate :: CalcOpts -> ByteString -> Entity Area -> IO ()
+calculate calcOpts connStr (Entity aid area) = do
   -- Perform the (partial) calculation
   demand' <- runReaderT (calcInterval $ areaDemandCond area) calcOpts
   -- Get parent result, AND, then write to database
@@ -74,9 +73,6 @@ calculateThread qsemn maxQSemN counter calcOpts connStr (Entity aid area) = do
     cleanRange start end aid Demand
     writeIntervals start end aid Demand demand
     )
-  -- Release lock
-  modifyMVar_ counter (return . (flip (-)) 1)
-  signalQSemN qsemn maxQSemN
 
 calcInterval :: String -> ReaderT CalcOpts IO [TSInterval]
 calcInterval condition = case parseExpression condition of
