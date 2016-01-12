@@ -10,11 +10,13 @@ module Blc.Queries.BlcResult
 import Database.Esqueleto
 import Data.Time
 import Control.Exception (assert)
+import Control.Monad.IO.Class (liftIO)
 import Data.IntMap (fromAscList, fromList, union, toAscList)
 import Data.List (sortOn)
 import Blc.Queries.Durations
 import AppM
 import Schema
+import Time
 
 data BlcResult =
   BlcResult (Entity Blc)
@@ -88,12 +90,14 @@ getQualities start end bids = do
 
 getModeInterv :: UTCTime -> UTCTime -> [Key Blc] -> AppM [(Key Blc, Int)]
 getModeInterv start end bids = do
+  today <- liftIO (relativeDay 0)
   modeInterv <- runDb $ select $ from $ \ i -> do
     let a = i ^. BlcIntervalEnd >. val start
             &&. i ^. BlcIntervalEnd <=. val end
     let b = i ^. BlcIntervalCategory ==. val Uptime
     let c = i ^. BlcIntervalBlc `in_` valList bids
-    where_ (a &&. b &&. c)
+    let d = i ^. BlcIntervalEnd !=. val today
+    where_ (a &&. b &&. c &&. d)
     groupBy (i ^. BlcIntervalBlc)
     orderBy [asc (i ^. BlcIntervalBlc)]
     return (i ^. BlcIntervalBlc, count (i ^. BlcIntervalEnd))

@@ -6,10 +6,12 @@ module Blc.Queries.AreaResult
 import Database.Esqueleto
 import Data.Time
 import Control.Exception (assert)
+import Control.Monad.IO.Class (liftIO)
 import Blc.Queries.DescendantBlcs
 import Blc.Queries.Durations
 import Schema
 import AppM
+import Time
 
 data AreaResult =
   AreaResult (Entity Area)
@@ -60,12 +62,14 @@ getAreaResult start end aid =
 
 getModeInterv :: UTCTime -> UTCTime -> [Key Blc] -> AppM Int
 getModeInterv start end bids = do
+  today <- liftIO (relativeDay 0)
   modeInterv <- runDb $ select $ from $ \ i -> do
     let a = i ^. BlcIntervalEnd >. val start
             &&. i ^. BlcIntervalEnd <=. val end
     let b = i ^. BlcIntervalCategory ==. val Uptime
     let c = i ^. BlcIntervalBlc `in_` valList bids
-    where_ (a &&. b &&. c)
+    let d = i ^. BlcIntervalEnd !=. val today
+    where_ (a &&. b &&. c &&. d)
     return $ count (i ^. BlcIntervalEnd)
   return (unValue $ head modeInterv)
 
