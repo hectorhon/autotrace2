@@ -12,6 +12,7 @@ import Database.Persist.Postgresql
 import Control.Monad.Logger
 import Control.Concurrent
 import System.IO
+import Data.Text (Text)
 import Data.ByteString.Char8 (pack)
 import Config
 import AppM
@@ -24,9 +25,11 @@ import Apc.Site
 import Apc.Issue.Site
 import Block.Site
 import Search.Site
+import User.AuthMiddleware
+import User.Types
 
 server :: ServerT Site AppM
-server = (runDb (runMigration migrateAll) >> return "migrate requested")
+server = migrateSite
     :<|> return homePage
     :<|> areaSite
     :<|> blcSite
@@ -34,6 +37,11 @@ server = (runDb (runMigration migrateAll) >> return "migrate requested")
     :<|> apcIssueSite
     :<|> blockSite
     :<|> searchSite
+
+migrateSite :: AppM Text
+migrateSite = do
+  runDb (runMigration migrateAll >> runMigration migrateUser)
+  return "migrate requested"
 
 readerServer :: Config -> Server Site
 readerServer cfg = enter (readerToEither cfg) server
@@ -53,6 +61,7 @@ main = do
   srcUrl     <- hGetLine srcFile
   srcPort    <- hGetLine srcFile >>= return . read
   run 3000 $ staticPolicy' caching (addBase "static")
+           $ auth connPool
            $ app defaultConfig { getPool = connPool
                                , getPoolConnStr = pack connString
                                , getQSemN = qsemn
