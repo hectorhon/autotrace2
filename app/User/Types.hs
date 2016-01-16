@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -12,9 +13,11 @@ module User.Types
   ) where
 
 import Database.Persist.TH
+import Servant
 import Data.Time
-import Data.Text
-import Data.ByteString
+import Data.Text (unpack)
+import Data.ByteString.Char8 (ByteString, pack)
+import Control.Monad.Except
 import User.Enums
 
 share [ mkPersist sqlSettings,
@@ -22,7 +25,7 @@ share [ mkPersist sqlSettings,
         mkDeleteCascade sqlSettings ]
   [persistLowerCase|
     User
-      name          Text
+      name          String
       hash          ByteString
     Role
       user          UserId
@@ -32,3 +35,15 @@ share [ mkPersist sqlSettings,
       user          UserId
       loginOn       UTCTime
   |]
+
+data LoginData = LoginData String ByteString
+
+instance FromFormUrlEncoded LoginData where
+  fromFormUrlEncoded params = runExcept $ do
+    name <- maybe (throwError "Missing username")
+                  (return . unpack)
+                  (lookup "name" params)
+    password <- maybe (throwError "Missing password")
+                      (return . pack . unpack)
+                      (lookup "password" params)
+    return (LoginData name password)

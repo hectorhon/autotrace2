@@ -13,12 +13,16 @@ import Apc.API
 import Apc.Issue.API
 import Block.API
 import Search.API
+import User.Routes
 
 type Site = "migrate" :> Post '[PlainText] Text
-       :<|> Get '[HTML] Html
+       :<|> UserRoutes
+       :<|> HomePage
        :<|> AreaSite
        :<|> BlcSite
        :<|> ApcSite
        :<|> ApcIssueSite
        :<|> BlockSite
        :<|> SearchSite
+
+type HomePage = Get '[HTML] Html

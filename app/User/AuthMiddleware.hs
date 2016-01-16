@@ -4,26 +4,29 @@ module User.AuthMiddleware where
 
 import Network.Wai
 import Database.Esqueleto
-import Control.Exception
-import Data.ByteString.Char8 (pack)
+import Data.ByteString.Char8 (pack, unpack)
 import User.Types
+import Web.Cookie
 
 auth :: ConnectionPool -> Middleware
 auth connPool app rq k =
-  let filtered = filter ((/= "UserRoles") . fst) (requestHeaders rq) in
-  do case lookup "Cookie" (requestHeaders rq) of
+  let filtered = filter ((/= "UserRoles") . fst) (requestHeaders rq)
+      mUI = do cookies  <- fmap parseCookies $
+                           lookup "Cookie" (requestHeaders rq)
+               username <- fmap unpack (lookup "username" cookies)
+               ident    <- lookup "ident" cookies
+               return (username, ident)
+  in case mUI of
        Nothing -> app rq k
-       Just tk -> do
-         vu <- (flip runSqlPool) connPool $
+       Just (username, ident) -> do
+         vr <- (flip runSqlPool) connPool $
            select $ from $ \ (r `InnerJoin` u `InnerJoin` s) -> do
              on (s ^. SessionUser ==. u ^. UserId)
              on (r ^. RoleUser ==. u ^. UserId)
-             where_ (s ^. SessionIdent ==. val tk)
-             return (u ^. UserName, r ^. RoleRole)
-         if null vu then app rq k
-         else do let u = map (\ (a, b) -> (unValue a, unValue b)) vu
-                 assert (and $ map (\ (a,_) -> a == fst (head u)) u) (return ())
-                 let u' = (fst (head u), map snd u)
-                 let p = ("UserRoles", pack $ show u')
-                 let rq' = rq { requestHeaders = p : filtered }
-                 app rq' k
+             where_ ( s ^. SessionIdent ==. val ident
+                      &&. u ^. UserName ==. val username)
+             return (r ^. RoleRole)
+         if null vr then app rq k
+         else let p = ("Roles", pack $ show $ map unValue vr)
+                  rq' = rq { requestHeaders = p : filtered }
+              in app rq' k

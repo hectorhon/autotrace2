@@ -11,21 +11,41 @@ import Servant
 import Servant.Server.Internal (succeedWith)
 import Network.Wai
 import Network.HTTP.Types
-import Data.Text (Text)
 import Data.ByteString.Char8 (unpack)
-import User.Types
+import User.Enums
 
-data RequireAuth
+class RoleClass a
+data ReadRole'
+data WriteRole'
+instance RoleClass ReadRole'
+instance RoleClass WriteRole'
 
-instance forall a. HasServer a => HasServer (RequireAuth :> a) where
-  type ServerT (RequireAuth :> a) m = (Text, [RoleType]) -> ServerT a m
-  route Proxy a rq k =
-    case lookup "UserRoles" (requestHeaders rq) of
-      Nothing -> k $ succeedWith $ responseLBS status401 [] ""
-      Just ur -> route (Proxy :: Proxy a) (a $ read $ unpack ur) rq k
+data RequireAuth r
 
-instance forall a. HasLink a => HasLink (RequireAuth :> a) where
-  type MkLink (RequireAuth :> a) = MkLink a
+instance forall a. HasServer a => HasServer (RequireAuth ReadRole' :> a) where
+  type ServerT (RequireAuth ReadRole' :> a) m = ServerT a m
+  route (Proxy :: Proxy (RequireAuth ReadRole' :> a)) a rq k =
+    let headers = requestHeaders rq
+        roleExist = maybe False
+                          (not . null . filter (== ReadRole))
+                          (fmap (read . unpack) $ lookup "Roles" headers)
+    in if roleExist then route (Proxy :: Proxy a) a rq k
+       else k $ succeedWith $ responseLBS status401 [] ""
+
+instance forall a. HasServer a => HasServer (RequireAuth WriteRole' :> a) where
+  type ServerT (RequireAuth WriteRole' :> a) m = ServerT a m
+  route (Proxy :: Proxy (RequireAuth WriteRole' :> a)) a rq k =
+    let headers = requestHeaders rq
+        roleExist = maybe False
+                          (not . null . filter (== WriteRole))
+                          (fmap (read . unpack) $ lookup "Roles" headers)
+    in if roleExist then route (Proxy :: Proxy a) a rq k
+       else k $ succeedWith $ responseLBS status401 [] ""
+
+instance forall a r. (HasLink a, RoleClass r)
+         => HasLink (RequireAuth r :> a) where
+  type MkLink (RequireAuth r :> a) = MkLink a
   toLink _ = toLink (Proxy :: Proxy a)
 
-type instance IsElem' e (RequireAuth :> a) = IsElem e a
+type instance IsElem' e (RequireAuth ReadRole' :> a) = IsElem e a
+type instance IsElem' e (RequireAuth WriteRole' :> a) = IsElem e a

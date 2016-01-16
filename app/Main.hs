@@ -27,9 +27,11 @@ import Block.Site
 import Search.Site
 import User.AuthMiddleware
 import User.Types
+import User.Handlers
 
 server :: ServerT Site AppM
 server = migrateSite
+    :<|> userHandlers
     :<|> return homePage
     :<|> areaSite
     :<|> blcSite
