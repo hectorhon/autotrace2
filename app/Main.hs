@@ -18,7 +18,6 @@ import Config
 import AppM
 import Schema
 import API
-import Common.Views (homePage)
 import Area.Site
 import Blc.Site
 import Apc.Site
@@ -28,11 +27,12 @@ import Search.Site
 import User.AuthMiddleware
 import User.Types
 import User.Handlers
+import Home.Handlers
 
 server :: ServerT Site AppM
 server = migrateSite
     :<|> userHandlers
-    :<|> return homePage
+    :<|> homeHandlers
     :<|> areaSite
     :<|> blcSite
     :<|> apcSite

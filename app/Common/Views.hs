@@ -9,8 +9,6 @@ module Common.Views where
 import Text.Blaze.Html5 as H hiding (i)
 import Text.Blaze.Html5.Attributes as Ha
 import Control.Monad (forM_)
-import Area.Links
-import Apc.Links
 
 layout :: String -> Html -> Html
 layout pageTitle pageContents = docTypeHtml $ do
@@ -31,11 +29,6 @@ layout pageTitle pageContents = docTypeHtml $ do
 banner :: Html
 banner = H.div ! class_ "banner" $ do
   a ! href "/" $ "autotrace"
-
-homePage :: Html
-homePage = layout "Home" $ do
-  p $ a ! href viewAreasLink $ "Browse base layer controllers"
-  p $ a ! href viewApcsLink $ "Browse APCs"
 
 class ToString a where
   toString :: a -> String

@@ -20,7 +20,7 @@ import User.Types
 import User.Routes
 import User.Views
 import User.Links
-import Common.Links
+import Home.Links
 import Common.Responses
 import AppM
 import Web.Cookie
