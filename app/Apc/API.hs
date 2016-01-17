@@ -10,12 +10,14 @@ import Database.Persist.Postgresql
 import Data.Text
 import Data.Time
 import Schema
+import User.RequireAuth
 
 type ApcSite = ToCreateApc
           :<|> CreateApc
           :<|> ViewApc
           :<|> ViewApcs
-          :<|> UpdateApc
+          :<|> ToEditApc
+          :<|> EditApc
           :<|> DeleteApc
           :<|> ToCalculateApc
           :<|> CalculateApc
@@ -24,45 +26,57 @@ type ApcSite = ToCreateApc
           :<|> ToCreateApcCv
           :<|> CreateApcCv
           :<|> ViewApcCv
-          :<|> UpdateApcCv
+          :<|> ToEditApcCv
+          :<|> EditApcCv
           :<|> DeleteApcCv
           :<|> ViewApcCvTrend
 
 type ToCreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
+                   :> RequireAuth WriteRole'
                    :> Get '[HTML] Html
 
 type CreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
                  :> ReqBody '[FormUrlEncoded] Apc
+                 :> RequireAuth WriteRole'
                  :> Post '[PlainText] Text
 
 type ViewApc = "area" :> Capture "aid" (Key Area)
-               :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
+               :> "apc" :> Capture "apcId" (Key Apc)
                :> Get '[HTML] Html
 
-type ViewApcs = "apc"
-                :> Get '[HTML] Html
+type ViewApcs = "apc" :> Get '[HTML] Html
 
-type UpdateApc = "area" :> Capture "aid" (Key Area)
-                 :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
-                 :> ReqBody '[FormUrlEncoded] Apc
-                 :> Post '[PlainText] Text
+type ToEditApc = "area" :> Capture "aid" (Key Area)
+                 :> "apc" :> Capture "apcId" (Key Apc) :> "edit"
+                 :> RequireAuth WriteRole'
+                 :> Get '[HTML] Html
+
+type EditApc = "area" :> Capture "aid" (Key Area)
+               :> "apc" :> Capture "apcId" (Key Apc) :> "edit"
+               :> ReqBody '[FormUrlEncoded] Apc
+               :> RequireAuth WriteRole'
+               :> Post '[PlainText] Text
 
 type DeleteApc = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
+                 :> RequireAuth WriteRole'
                  :> Delete '[PlainText] Text
 
 type ToCalculateApc = "area" :> Capture "aid" (Key Area)
                       :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
                       :> QueryParam "start" Day :> QueryParam "end" Day
+                      :> RequireAuth WriteRole'
                       :> Get '[HTML] Html
 
 type ToCalculateApc' = "area" :> Capture "aid" (Key Area)
                        :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
+                       :> RequireAuth WriteRole'
                        :> Get '[HTML] Html
 
 type CalculateApc = "area" :> Capture "aid" (Key Area)
                     :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
+                    :> RequireAuth WriteRole'
                     :> Post '[PlainText] Text
 
 type ViewApcPerformance = "area" :> Capture "aid" (Key Area)
@@ -74,33 +88,41 @@ type ViewApcPerformance' = "area" :> Capture "aid" (Key Area)
                           :> "apc" :> Capture "apcId" (Key Apc) :> "performance"
                           :> Get '[HTML] Html
 
-
-
 type ToCreateApcCv = "area" :> Capture "aid" (Key Area)
                      :> "apc" :> Capture "apcId" (Key Apc)
                      :> "cv" :> "new"
+                     :> RequireAuth WriteRole'
                      :> Get '[HTML] Html
 
 type CreateApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> "new"
                    :> ReqBody '[FormUrlEncoded] Cv
+                   :> RequireAuth WriteRole'
                    :> Post '[PlainText] Text
 
 type ViewApcCv = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc)
-                 :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                 :> "cv" :> Capture "cid" (Key Cv)
                  :> Get '[HTML] Html
 
-type UpdateApcCv = "area" :> Capture "aid" (Key Area)
+type ToEditApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
-                   :> "cv" :> Capture "cid" (Key Cv) :> "definition"
-                   :> ReqBody '[FormUrlEncoded] Cv
-                   :> Post '[PlainText] Text
+                   :> "cv" :> Capture "cid" (Key Cv) :> "edit"
+                   :> RequireAuth WriteRole'
+                   :> Get '[HTML] Html
+
+type EditApcCv = "area" :> Capture "aid" (Key Area)
+                 :> "apc" :> Capture "apcId" (Key Apc)
+                 :> "cv" :> Capture "cid" (Key Cv) :> "edit"
+                 :> ReqBody '[FormUrlEncoded] Cv
+                 :> RequireAuth WriteRole'
+                 :> Post '[PlainText] Text
 
 type DeleteApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                   :> RequireAuth WriteRole'
                    :> Delete '[PlainText] Text
 
 type ViewApcCvTrend = "area" :> Capture "aid" (Key Area)

@@ -17,17 +17,23 @@ toCreateApcLink aid = stringValue $
 
 
 viewApcLink' :: Key Area -> Key Apc -> String
-viewApcLink' aid bid =
-  "/" ++ show (linkTo (Proxy :: Proxy ViewApc) aid bid)
+viewApcLink' aid apcId =
+  "/" ++ show (linkTo (Proxy :: Proxy ViewApc) aid apcId)
 
 viewApcLink :: Key Area -> Key Apc -> AttributeValue
-viewApcLink aid bid = stringValue $ viewApcLink' aid bid
+viewApcLink aid apcId = stringValue $ viewApcLink' aid apcId
 
 
 
 viewApcsLink :: AttributeValue
 viewApcsLink = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ViewApcs))
+
+
+
+toEditApcLink :: Key Area -> Key Apc -> AttributeValue
+toEditApcLink aid apcId = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToEditApc) aid apcId)
 
 
 
@@ -65,6 +71,12 @@ viewApcCvLink' aid apcId cid =
 
 viewApcCvLink :: Key Area -> Key Apc -> Key Cv -> AttributeValue
 viewApcCvLink aid apcId cid = stringValue $ viewApcCvLink' aid apcId cid
+
+
+
+toEditApcCvLink :: Key Area -> Key Apc -> Key Cv -> AttributeValue
+toEditApcCvLink aid apcId cid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToEditApcCv) aid apcId cid)
 
 
 

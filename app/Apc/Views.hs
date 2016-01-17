@@ -26,12 +26,20 @@ apcIdPage :: Entity Apc -> Entity Area -> [Entity Cv] -> Html
 apcIdPage (Entity aid apc) parent cvs = layout (apcName apc) $ do
   h1 $ toHtml (apcName apc)
   apcNavigation (entityKey parent) aid 1
-  apcForm parent (Just apc)
+  editableH2 "Definition" (toEditApcLink (entityKey parent) aid)
+  apcDD apc parent
   h2 "CVs"
   ul $ do
     forM_ cvs (\ (Entity cid cv) -> li $
       a ! href (viewApcCvLink (apcArea apc) aid cid) $ toHtml (cvName cv))
     li $ a ! href (toCreateApcCvLink (apcArea apc) aid) $ "New CV..."
+
+apcEditPage :: Entity Apc -> Entity Area -> Html
+apcEditPage (Entity aid apc) parent = layout (apcName apc) $ do
+  h1 $ toHtml (apcName apc)
+  apcNavigation (entityKey parent) aid 1
+  h2 "Definition - edit"
+  apcForm parent (Just apc)
 
 apcsPage :: [Entity Apc] -> Html
 apcsPage apcs = layout "APC list" $ do
@@ -135,6 +143,15 @@ apcCvIdPage :: Entity Cv -> Entity Apc -> Html
 apcCvIdPage (Entity cid cv) apc = layout (cvName cv) $ do
   h1 $ toHtml (cvName cv)
   cvNavigation (apcArea $ entityVal apc) (entityKey apc) cid 1
+  editableH2 "Definition" $
+    toEditApcCvLink (apcArea $ entityVal apc) (cvApc cv) cid
+  apcCvDD cv apc
+
+apcCvEditPage :: Entity Cv -> Entity Apc -> Html
+apcCvEditPage (Entity cid cv) apc = layout (cvName cv) $ do
+  h1 $ toHtml (cvName cv)
+  cvNavigation (apcArea $ entityVal apc) (entityKey apc) cid 1
+  h2 "Definition - edit"
   apcCvForm apc (Just cv)
 
 apcCvTrendPage :: Entity Cv -> Entity Apc -> TSData -> Html
@@ -172,6 +189,15 @@ apcForm (Entity pid parent) mApc = H.form ! method "post" $ do
   button "Save"
   maybe (return ())
         (deleteButton "apc-delete-button" . viewAreaLink' . apcArea) mApc
+  cancelButton "apc-cancel-button"
+
+apcDD :: Apc -> Entity Area -> Html
+apcDD apc (Entity pid parent) = table ! class_ "definition-table" $ do
+  tr $ th "Name" >> td (toHtml $ apcName apc)
+  tr $ th "Uptime condition" >> td (toHtml $ apcUptimeCond apc)
+  tr $ do
+    th "Parent"
+    td $ a ! href (viewAreaLink pid) $ (toHtml $ areaName parent)
 
 apcCvForm :: Entity Apc -> Maybe Cv -> Html
 apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
@@ -192,3 +218,17 @@ apcCvForm (Entity aid apc) mCv = H.form ! method "post" $ do
   maybe (return ())
         (deleteButton "apc-cv-delete-button"
         . viewApcLink' (apcArea apc) . cvApc) mCv
+  cancelButton "cv-cancel-button"
+
+apcCvDD :: Cv -> Entity Apc -> Html
+apcCvDD cv (Entity aid apc) = table ! class_ "definition-table" $ do
+  tr $ th "Name" >> td (toHtml $ cvName cv)
+  tr $ do
+    th "APC"
+    td $ a ! href (viewApcLink (apcArea apc) aid) $ (toHtml $ apcName apc)
+  tr $ th "Category"           >> td (toHtml $ show $ cvCategory cv)
+  tr $ th "Measurement tag"    >> td (toHtml $ cvMeasTag cv)
+  tr $ th "Set range high tag" >> td (toHtml $ cvSrhTag cv)
+  tr $ th "Set range low tag"  >> td (toHtml $ cvSrlTag cv)
+  tr $ th "Prediction tag"     >> td (toHtml $ cvPredTag cv)
+  tr $ th "Selected tag"       >> td (toHtml $ cvSelTag cv)
