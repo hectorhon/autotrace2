@@ -10,7 +10,7 @@ import Web.Cookie
 
 auth :: ConnectionPool -> Middleware
 auth connPool app rq k =
-  let filtered = filter ((/= "UserRoles") . fst) (requestHeaders rq)
+  let filtered = filter ((/= "Roles") . fst) (requestHeaders rq)
       mUI = do cookies  <- fmap parseCookies $
                            lookup "Cookie" (requestHeaders rq)
                username <- fmap unpack (lookup "username" cookies)
