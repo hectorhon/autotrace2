@@ -21,10 +21,15 @@
 
 body {
     font-family: 'OpenSans';
+    margin: 0;
     background-color: white;
-    width: 800px;
-    margin: 3em auto auto auto;
     overflow-y: scroll;
+}
+
+.page-contents {
+    margin: 3em auto;
+    width: 800px;
+    padding: 0 20px;
 }
 
 a, a:visited {
@@ -46,8 +51,8 @@ h2 {
 .banner {
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100%;
+    width: 99%;
+    padding: 0 0.5%;
     background-color: powderblue;
 }
 
@@ -66,7 +71,9 @@ h2 {
 }
 
 form {
-    margin: 1em;
+    margin: 1em auto;
+    overflow: auto;
+    width: 580px;
 }
 
 label {
@@ -82,6 +89,7 @@ label span {
 }
 
 .line-form {
+    width: auto;
     margin: 1em 0;
     text-align: center;
 }
@@ -145,7 +153,7 @@ select {
 
 button {
     font-family: 'OpenSans';
-    margin: 2em 2em 2em 0;
+    margin: 1em 2em;
     background-color: lemonchiffon;
     border: 1px solid orange;
     padding: 3px 18px;

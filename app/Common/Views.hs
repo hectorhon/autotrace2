@@ -8,10 +8,17 @@ module Common.Views where
 
 import Text.Blaze.Html5 as H hiding (i)
 import Text.Blaze.Html5.Attributes as Ha
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
+import User.Links
 
 layout :: String -> Html -> Html
-layout pageTitle pageContents = docTypeHtml $ do
+layout = layout' True
+
+layoutNoBanner :: String -> Html -> Html
+layoutNoBanner = layout' False
+
+layout' :: Bool -> String -> Html -> Html
+layout' showBanner pageTitle pageContents = docTypeHtml $ do
   H.head $ do
     meta ! charset "utf-8"
     meta ! httpEquiv "X-UA-Compatible" ! content "IE=Edge"
@@ -23,8 +30,8 @@ layout pageTitle pageContents = docTypeHtml $ do
     link ! rel "stylesheet" ! type_ "text/css" ! href "/jquery-ui.css"
     link ! rel "stylesheet" ! type_ "text/css" ! href "/style.css"
   H.body $ do
-    banner
-    pageContents
+    when showBanner banner
+    H.div ! class_ "page-contents" $ pageContents
 
 banner :: Html
 banner = H.div ! class_ "banner" $ do
@@ -34,27 +41,29 @@ banner = H.div ! class_ "banner" $ do
       H.span "Logged in as "
       H.span $ H.b ! Ha.id "username-field" $ ""
     a ! href "#" ! Ha.id "login-logout-link" $ ""
-  script " var cookies = {};                                 \
-         \ document.cookie.split('; ').forEach(function(c) { \
-         \   var t = c.split('=');                           \
-         \   cookies[t[0]]=t[1];                             \
-         \ });                                               \
-         \ if (!cookies['username']) {                       \
-         \   $('#username-field').text('guest');             \
-         \   $('#login-logout-link').text('Change user...'); \
-         \ } else if (cookies['username'] == 'guest') {      \
-         \   $('#username-field').text('guest');             \
-         \   $('#login-logout-link').text('Change user...'); \
-         \ } else {                                          \
-         \   $('#username-field').text(cookies['username']); \
-         \   $('#login-logout-link').text('Logout');         \
-         \ }                                                 "
-  script " $('#login-logout-link').click(function(e) {       \
-         \   e.preventDefault();                             \
-         \   $.post('/logout').success(function() {          \
-         \     window.location.href = '/login';              \
-         \   });                                             \
-         \ });                                               "
+  script $
+    " var cookies = {};                                 \
+    \ document.cookie.split('; ').forEach(function(c) { \
+    \   var t = c.split('=');                           \
+    \   cookies[t[0]]=t[1];                             \
+    \ });                                               \
+    \ if (!cookies['username']) {                       \
+    \   $('#username-field').text('guest');             \
+    \   $('#login-logout-link').text('Change user...'); \
+    \ } else if (cookies['username'] == 'guest') {      \
+    \   $('#username-field').text('guest');             \
+    \   $('#login-logout-link').text('Change user...'); \
+    \ } else {                                          \
+    \   $('#username-field').text(cookies['username']); \
+    \   $('#login-logout-link').text('Logout');         \
+    \ }                                                 "
+  script $ toHtml $
+    " $('#login-logout-link').click(function(e) {                  \
+    \   e.preventDefault();                                        \
+    \   $.post('" ++ logoutLink' ++ "').success(function() {       \
+    \     window.location.href = '" ++ toLoginLink' True ++ "';    \
+    \   });                                                        \
+    \ });                                                          "
 
 class ToString a where
   toString :: a -> String

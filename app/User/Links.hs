@@ -7,5 +7,8 @@ import Servant
 import Common.Links
 import User.Routes
 
-toLoginLink' :: String
-toLoginLink' = "/" ++ show (linkTo (Proxy :: Proxy ToLogin))
+toLoginLink' :: Bool -> String
+toLoginLink' isValid = "/" ++ show (linkTo (Proxy :: Proxy ToLogin) isValid)
+
+logoutLink' :: String
+logoutLink' = "/" ++ show (linkTo (Proxy :: Proxy Logout))

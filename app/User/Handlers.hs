@@ -30,14 +30,15 @@ userHandlers = toLogin
           :<|> login
           :<|> logout
 
-toLogin :: AppM Html
-toLogin = return loginPage
+toLogin :: Maybe Bool -> AppM Html
+toLogin mValid = let isValid = maybe True id mValid in
+  return (loginPage isValid)
 
 login :: LoginData -> AppM Text
 login (LoginData name pass) = do
   mUser <- runDb $ selectFirst [UserName ==. name] []
   case mUser of
-    Nothing -> redirect toLoginLink' >> return undefined
+    Nothing -> redirect (toLoginLink' False) >> return undefined
     Just (Entity uid user) -> do
       if verifyPassword pass (userHash user)
       then do
@@ -55,7 +56,7 @@ login (LoginData name pass) = do
                                    , ("set-cookie", usernameCookie    )
                                    , ("set-cookie", identCookie       ) ] }
         return undefined
-      else redirect toLoginLink' >> return undefined
+      else redirect (toLoginLink' False) >> return undefined
 
 logout :: Maybe String -> AppM Text
 logout mCookie = do
@@ -70,7 +71,7 @@ logout mCookie = do
   let identCookie = toByteString $ renderSetCookie $
         def { setCookieName = "ident" , setCookieValue = "guest" }
   _ <- lift $ left $
-       err303 { errHeaders = [ ("location"  , pack toLoginLink')
+       err303 { errHeaders = [ ("location"  , pack $ toLoginLink' True)
                              , ("set-cookie", usernameCookie    )
                              , ("set-cookie", identCookie       ) ] }
   return undefined

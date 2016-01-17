@@ -13,7 +13,7 @@ type UserRoutes = ToLogin
              :<|> Login
              :<|> Logout
 
-type ToLogin = "login" :> Get '[HTML] Html
+type ToLogin = "login" :> QueryParam "valid" Bool :> Get '[HTML] Html
 
 type Login = "login"
              :> ReqBody '[FormUrlEncoded] LoginData
