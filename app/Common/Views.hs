@@ -29,6 +29,32 @@ layout pageTitle pageContents = docTypeHtml $ do
 banner :: Html
 banner = H.div ! class_ "banner" $ do
   a ! href "/" $ "autotrace"
+  H.span ! Ha.style "float:right;" $ do
+    H.span ! Ha.style "margin:0 10px;" $ do
+      H.span "Logged in as "
+      H.span $ H.b ! Ha.id "username-field" $ ""
+    a ! href "#" ! Ha.id "login-logout-link" $ ""
+  script " var cookies = {};                                 \
+         \ document.cookie.split('; ').forEach(function(c) { \
+         \   var t = c.split('=');                           \
+         \   cookies[t[0]]=t[1];                             \
+         \ });                                               \
+         \ if (!cookies['username']) {                       \
+         \   $('#username-field').text('guest');             \
+         \   $('#login-logout-link').text('Change user...'); \
+         \ } else if (cookies['username'] == 'guest') {      \
+         \   $('#username-field').text('guest');             \
+         \   $('#login-logout-link').text('Change user...'); \
+         \ } else {                                          \
+         \   $('#username-field').text(cookies['username']); \
+         \   $('#login-logout-link').text('Logout');         \
+         \ }                                                 "
+  script " $('#login-logout-link').click(function(e) {       \
+         \   e.preventDefault();                             \
+         \   $.post('/logout').success(function() {          \
+         \     window.location.href = '/login';              \
+         \   });                                             \
+         \ });                                               "
 
 class ToString a where
   toString :: a -> String
