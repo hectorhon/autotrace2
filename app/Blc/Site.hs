@@ -11,7 +11,6 @@ import Text.Blaze.Html5 hiding (area, map)
 import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
-import Control.Monad.Trans.Maybe
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Maybe
@@ -32,7 +31,8 @@ blcSite :: ServerT BlcSite AppM
 blcSite = toCreateBlc
      :<|> createBlc
      :<|> viewBlc
-     :<|> updateBlc
+     :<|> toEditBlc
+     :<|> editBlc
      :<|> deleteBlc
      :<|> toCalculateBlc
      :<|> calculateBlc
@@ -54,19 +54,32 @@ createBlc pid blc = do
   return undefined
 
 viewBlc :: Key Area -> Key Blc -> AppM Html
-viewBlc pid bid = runMaybeT (do
+viewBlc pid bid = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
-  guard (isJust mBlc)
-  mParent <- runDb $ selectFirst [AreaId ==. pid] []
-  guard (isJust mParent)
-  return (fromJust mBlc, fromJust mParent))
-  >>= maybe (lift $ left err404) (return . uncurry blcIdPage)
+  case mBlc of
+    Nothing  -> lift (left err404)
+    Just blc -> do
+      mParent <- runDb $ selectFirst [AreaId ==. pid] []
+      case mParent of
+        Nothing   -> lift (left err404)
+        Just area -> return (blcIdPage blc area)
 
-updateBlc :: Key Area -> Key Blc -> Blc -> AppM Text
-updateBlc pid bid blc = do
+toEditBlc :: Key Area -> Key Blc -> AppM Html
+toEditBlc pid bid = do
+  mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
+  case mBlc of
+    Nothing -> lift (left err404)
+    Just blc -> do
+      mParent <- runDb $ selectFirst [AreaId ==. pid] []
+      case mParent of
+        Nothing -> lift (left err404)
+        Just area -> return (blcEditPage blc area)
+
+editBlc :: Key Area -> Key Blc -> Blc -> AppM Text
+editBlc pid bid blc = do
   mBlc <- runDb $ selectFirst [BlcArea ==. pid, BlcId ==. bid] []
   if isNothing mBlc then (lift $ left err404) else runDb (replace bid blc)
-  redirect (viewBlcsPerformanceDefaultDayLink' pid)
+  redirect (viewBlcLink' pid bid)
   return undefined
 
 deleteBlc :: Key Area -> Key Blc -> AppM Text

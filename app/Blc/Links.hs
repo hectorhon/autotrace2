@@ -25,6 +25,12 @@ viewBlcLink aid bid = stringValue $ viewBlcLink' aid bid
 
 
 
+toEditBlcLink :: Key Area -> Key Blc -> AttributeValue
+toEditBlcLink aid bid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToEditBlc) aid bid)
+
+
+
 toCalculateBlcDefaultDayLink :: Key Area -> Key Blc -> AttributeValue
 toCalculateBlcDefaultDayLink aid bid = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCalculateBlc') aid bid)

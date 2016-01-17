@@ -24,6 +24,14 @@ blcIdPage :: Entity Blc -> Entity Area -> Html
 blcIdPage (Entity bid blc) parent = layout (blcName blc) $ do
   h1 $ toHtml (blcName blc)
   blcNavigation (entityKey parent) bid 1
+  editableH2 "Definition" (toEditBlcLink (entityKey parent) bid)
+  blcDD blc parent
+
+blcEditPage :: Entity Blc -> Entity Area -> Html
+blcEditPage (Entity bid blc) parent = layout (blcName blc) $ do
+  h1 $ toHtml (blcName blc)
+  blcNavigation (entityKey parent) bid 1
+  h2 "Definition - edit"
   blcForm parent (Just blc)
 
 blcCalculatePage :: UTCTime -> UTCTime -> Entity Blc -> Html
@@ -243,3 +251,24 @@ blcForm (Entity pid parent) mBlc = H.form ! method "post" $ do
         (deleteButton "blc-delete-button"
          . viewBlcsPerformanceDefaultDayLink' . blcArea)
         mBlc
+  cancelButton "blc-cancel-button"
+
+blcDD :: Blc -> Entity Area -> Html
+blcDD blc (Entity pid parent) = table ! class_ "definition-table" $ do
+  tr $ th "Name" >> td (toHtml $ blcName blc)
+  tr $ th "Description" >> td (toHtml $ blcDescription blc)
+  tr $ do
+    th "Parent"
+    td $ a ! href (viewBlcsPerformanceDefaultDayLink pid)
+           $ (toHtml $ areaName parent)
+  tr $ th "Measurement tag" >> td (toHtml $ blcMeasTag blc)
+  tr $ th "Setpoint tag" >> td (toHtml $ blcSptTag blc)
+  tr $ th "Output tag" >> td (toHtml $ blcOutTag blc)
+  tr $ th "Output saturate high" >> td (toHtml $ blcOutMax blc)
+  tr $ th "Output saturate low" >> td (toHtml $ blcOutMin blc)
+  tr $ th "Demand condition" >> td (toHtml $ blcDemandCond blc)
+  tr $ th "Uptime condition" >> td (toHtml $ blcUptimeCond blc)
+  tr $ th "Objective" >> td (toHtml $ show $ blcObjective blc)
+  tr $ th "Compliance margin" >> td (toHtml $ blcMargin blc)
+  tr $ th "Calc. MV interv. when" >> td (toHtml $ blcCalcMvICond blc)
+  tr $ th "Calc. SP interv. when" >> td (toHtml $ blcCalcSpICond blc)

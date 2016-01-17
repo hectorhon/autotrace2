@@ -10,11 +10,13 @@ import Database.Persist.Postgresql
 import Data.Text
 import Schema
 import Time
+import User.RequireAuth
 
 type BlcSite = ToCreateBlc
           :<|> CreateBlc
           :<|> ViewBlc
-          :<|> UpdateBlc
+          :<|> ToEditBlc
+          :<|> EditBlc
           :<|> DeleteBlc
           :<|> ToCalculateBlc
           :<|> CalculateBlc
@@ -24,37 +26,49 @@ type BlcSite = ToCreateBlc
           :<|> CalculateAreaBlcs
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
+                   :> RequireAuth WriteRole'
                    :> Get '[HTML] Html
 
 type CreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
                  :> ReqBody '[FormUrlEncoded] Blc
+                 :> RequireAuth WriteRole'
                  :> Post '[PlainText] Text
 
 type ViewBlc = "area" :> Capture "aid" (Key Area)
-               :> "blc" :> Capture "bid" (Key Blc) :> "definition"
+               :> "blc" :> Capture "bid" (Key Blc)
                :> Get '[HTML] Html
 
-type UpdateBlc = "area" :> Capture "aid" (Key Area)
-                 :> "blc" :> Capture "bid" (Key Blc) :> "definition"
-                 :> ReqBody '[FormUrlEncoded] Blc
-                 :> Post '[PlainText] Text
+type ToEditBlc = "area" :> Capture "aid" (Key Area)
+                 :> "blc" :> Capture "bid" (Key Blc) :> "edit"
+                 :> RequireAuth WriteRole'
+                 :> Get '[HTML] Html
+
+type EditBlc = "area" :> Capture "aid" (Key Area)
+               :> "blc" :> Capture "bid" (Key Blc) :> "edit"
+               :> ReqBody '[FormUrlEncoded] Blc
+               :> RequireAuth WriteRole'
+               :> Post '[PlainText] Text
 
 type DeleteBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "definition"
+               :> RequireAuth WriteRole'
                :> Delete '[PlainText] Text
 
 type ToCalculateBlc = "area" :> Capture "aid" (Key Area)
                       :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                       :> QueryParam "start" Day :> QueryParam "end" Day
+                      :> RequireAuth WriteRole'
                       :> Get '[HTML] Html
 
 type ToCalculateBlc' = "area" :> Capture "aid" (Key Area)
                        :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
+                       :> RequireAuth WriteRole'
                        :> Get '[HTML] Html
 
 type CalculateBlc = "area" :> Capture "aid" (Key Area)
                     :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
+                    :> RequireAuth WriteRole'
                     :> Post '[PlainText] Text
 
 type ViewBlcsPerformance = "area" :> Capture "aid" (Key Area)
@@ -76,9 +90,11 @@ type ViewBlcsPerformance' = "area" :> Capture "aid" (Key Area)
 type ToCalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                            :> "blc" :> "calculate"
                            :> QueryParam "start" Day :> QueryParam "end" Day
+                           :> RequireAuth WriteRole'
                            :> Get '[HTML] Html
 
 type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                          :> "blc" :> "calculate"
                          :> ReqBody '[FormUrlEncoded] (Day, Day)
+                         :> RequireAuth WriteRole'
                          :> Post '[PlainText] Text
