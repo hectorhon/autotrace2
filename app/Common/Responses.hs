@@ -9,4 +9,4 @@ import Data.ByteString.Char8 (pack)
 import AppM
 
 redirect :: String -> AppM ()
-redirect url = lift $ left $ err301 { errHeaders = [("location", pack url)] }
+redirect url = lift $ left $ err303 { errHeaders = [("location", pack url)] }

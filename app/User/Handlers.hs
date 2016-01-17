@@ -51,7 +51,7 @@ login (LoginData name pass) = do
         let identCookie = toByteString $ renderSetCookie $
               def { setCookieName = "ident" , setCookieValue = ident }
         _ <- lift $ left $
-             err301 { errHeaders = [ ("location"  , pack homePageLink')
+             err303 { errHeaders = [ ("location"  , pack homePageLink')
                                    , ("set-cookie", usernameCookie    )
                                    , ("set-cookie", identCookie       ) ] }
         return undefined
@@ -66,7 +66,7 @@ logout mIdent = do
   let identCookie = toByteString $ renderSetCookie $
         def { setCookieName = "ident" , setCookieValue = "none" }
   _ <- lift $ left $
-       err301 { errHeaders = [ ("location"  , pack toLoginLink')
+       err303 { errHeaders = [ ("location"  , pack toLoginLink')
                              , ("set-cookie", usernameCookie    )
                              , ("set-cookie", identCookie       ) ] }
   return undefined
