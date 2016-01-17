@@ -34,3 +34,9 @@ viewAreaLink' aid =
 
 viewAreaLink :: Key Area -> AttributeValue
 viewAreaLink = stringValue . viewAreaLink'
+
+
+
+toEditAreaLink :: Key Area -> AttributeValue
+toEditAreaLink aid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToEditArea) aid)

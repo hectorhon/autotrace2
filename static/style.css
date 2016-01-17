@@ -226,7 +226,19 @@ button:hover {
     font-size: 10px;
 }
 
+.definition-table {
+    margin: 0 2em;
+}
 
+.definition-table th {
+    font-weight: normal;
+    font-style: italic;
+    text-align: left;
+}
+
+.definition-table td, .definition-table th {
+    padding: 0.5em 1em;
+}
 
 .list-table {
     table-layout: fixed;

@@ -65,6 +65,13 @@ banner = H.div ! class_ "banner" $ do
     \   });                                                        \
     \ });                                                          "
 
+editableH2 :: String -> AttributeValue -> Html
+editableH2 h2Label editLink = h2 $ do
+  H.span (toHtml $ h2Label)
+  H.span ! Ha.style "float:right;" $
+    a ! href editLink ! Ha.style "text-decoration:none;"
+      $ preEscapedString "&#x270E"
+
 class ToString a where
   toString :: a -> String
 instance ToString String where

@@ -34,8 +34,8 @@ areaIdPage (Entity aid area) mParent children blcs apcs =
   layout (areaName area) $ do
     H.h1 (toHtml $ areaName area)
     areaNavigation aid 1
-    H.h2 "Definition"
-    areaForm mParent (Just area)
+    editableH2 "Definition" (toEditAreaLink aid)
+    areaDD area mParent
     H.h2 "Subareas"
     ul $ do
       forM_ children (\ (Entity aid' area') -> li $
@@ -52,12 +52,18 @@ areaIdPage (Entity aid area) mParent children blcs apcs =
         a ! href (viewApcLink aid aid') $ toHtml (apcName apc))
       li $ a ! href (toCreateApcLink aid) $ "New APC..."
 
+areaEditPage :: Entity Area -> Maybe (Entity Area) -> Html
+areaEditPage (Entity aid area) mParent = layout (areaName area) $ do
+  H.h1 (toHtml $ areaName area)
+  areaNavigation aid 1
+  H.h2 "Definition - edit"
+  areaForm mParent (Just area)
+
 areaNavigation :: Key Area -> Int -> Html
 areaNavigation aid = navigation
   [ ("Definition", viewAreaLink aid)
   , ("Base layer", viewBlcsPerformanceDefaultDayLink aid)
   ]
-
 
 areaForm :: Maybe (Entity Area) -> Maybe Area -> Html
 areaForm mParent mArea = let Entity kParent parent = fromJust mParent in
@@ -70,3 +76,13 @@ areaForm mParent mArea = let Entity kParent parent = fromJust mParent in
     field "Demand condition" "demandcond"  areaDemandCond  mArea
     button "Save"
     when (isJust mArea) (deleteButton "area-delete-button" viewAreasLink')
+    cancelButton "area-cancel-button"
+
+areaDD :: Area -> Maybe (Entity Area) -> Html
+areaDD area mParent = table ! class_ "definition-table" $ do
+  tr $ th "Name" >> td (toHtml $ areaName area)
+  tr $ th "Description" >> td (toHtml $ areaDescription area)
+  case mParent of
+    Nothing -> return ()
+    Just (Entity _ parent) -> tr $ th "Parent" >> td (toHtml $ areaName parent)
+  tr $ th "Demand condition" >> td (toHtml $ areaDemandCond area)
