@@ -27,6 +27,7 @@ share [ mkPersist sqlSettings,
     User
       name          String
       hash          ByteString
+      UniqueName name
     Role
       user          UserId
       role          RoleType
