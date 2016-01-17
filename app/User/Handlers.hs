@@ -58,13 +58,17 @@ login (LoginData name pass) = do
       else redirect toLoginLink' >> return undefined
 
 logout :: Maybe String -> AppM Text
-logout mIdent = do
-  when (isJust mIdent) $
-    runDb $ deleteWhere [SessionIdent ==. pack (fromJust mIdent)]
+logout mCookie = do
+  when (isJust mCookie) $
+    let cookies = parseCookies (pack $ fromJust mCookie)
+        mIdent = lookup "ident" cookies
+    in case mIdent of
+         Nothing -> return ()
+         Just ident -> runDb $ deleteWhere [SessionIdent ==. ident]
   let usernameCookie = toByteString $ renderSetCookie $
-        def { setCookieName = "username" , setCookieValue = "none" }
+        def { setCookieName = "username" , setCookieValue = "guest" }
   let identCookie = toByteString $ renderSetCookie $
-        def { setCookieName = "ident" , setCookieValue = "none" }
+        def { setCookieName = "ident" , setCookieValue = "guest" }
   _ <- lift $ left $
        err303 { errHeaders = [ ("location"  , pack toLoginLink')
                              , ("set-cookie", usernameCookie    )
