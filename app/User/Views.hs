@@ -9,6 +9,6 @@ import Common.Views
 loginPage :: Html
 loginPage = layout "Login" $ do
   H.form ! method "post" $ do
-    field "Username" "name" (\ _ -> "") Nothing
-    field "Password" "password" (\ _ -> "") Nothing
+    field "Username" "name" (\ _ -> "" :: String) Nothing
+    field "Password" "password" (\ _ -> "" :: String) Nothing
     button "Login"
