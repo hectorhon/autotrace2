@@ -30,7 +30,8 @@ instance forall a. HasServer a => HasServer (RequireAuth ReadRole' :> a) where
                           (not . null . filter (== ReadRole))
                           (fmap (read . unpack) $ lookup "Roles" headers)
     in if roleExist then route (Proxy :: Proxy a) a rq k
-       else k $ succeedWith $ responseLBS status401 [] ""
+       else k $ succeedWith $
+            responseLBS status401 [] "You don't have permission to do this"
 
 instance forall a. HasServer a => HasServer (RequireAuth WriteRole' :> a) where
   type ServerT (RequireAuth WriteRole' :> a) m = ServerT a m
@@ -40,7 +41,8 @@ instance forall a. HasServer a => HasServer (RequireAuth WriteRole' :> a) where
                           (not . null . filter (== WriteRole))
                           (fmap (read . unpack) $ lookup "Roles" headers)
     in if roleExist then route (Proxy :: Proxy a) a rq k
-       else k $ succeedWith $ responseLBS status401 [] ""
+       else k $ succeedWith $
+            responseLBS status401 [] "You don't have permission to do this"
 
 instance forall a r. (HasLink a, RoleClass r)
          => HasLink (RequireAuth r :> a) where

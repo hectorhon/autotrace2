@@ -28,6 +28,7 @@ import User.AuthMiddleware
 import User.Types
 import User.Handlers
 import Home.Handlers
+import Common.PackErrMiddleware (packErr)
 
 server :: ServerT Site AppM
 server = migrateSite
@@ -64,6 +65,7 @@ main = do
   srcPort    <- hGetLine srcFile >>= return . read
   run 3000 $ staticPolicy' caching (addBase "static")
            $ auth connPool
+           $ packErr
            $ app defaultConfig { getPool = connPool
                                , getPoolConnStr = pack connString
                                , getQSemN = qsemn
