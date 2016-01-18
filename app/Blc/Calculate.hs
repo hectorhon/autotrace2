@@ -72,7 +72,7 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
                     outMin = show (blcOutMin blc)
                 in concat [ "[", outTag, "]>=", outMax, " or "
                           , "[", outTag, "]<=", outMin ]
-    let notPerform = filterCounts 2 $ counts [perform]
+    let notPerform = filterCounts 0 $ counts [perform]
     let cvAffBySat = filterCounts 2 $ counts [notPerform, mvSat]
     return (demand', uptimeDemand, uptime, performUptime,
             mvInterv, spInterv, mvSat, cvAffBySat)
