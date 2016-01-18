@@ -9,10 +9,11 @@ import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Static
 import Database.Persist.Postgresql
+import Control.Monad (when)
 import Control.Monad.Logger
 import Control.Concurrent
 import System.IO
-import Data.Text (Text)
+import System.Environment (getArgs)
 import Data.ByteString.Char8 (pack)
 import Config
 import AppM
@@ -31,8 +32,7 @@ import Home.Handlers
 import Common.PackErrMiddleware (packErr)
 
 server :: ServerT Site AppM
-server = migrateSite
-    :<|> userHandlers
+server = userHandlers
     :<|> homeHandlers
     :<|> areaSite
     :<|> blcSite
@@ -40,11 +40,6 @@ server = migrateSite
     :<|> apcIssueSite
     :<|> blockSite
     :<|> searchSite
-
-migrateSite :: AppM Text
-migrateSite = do
-  runDb (runMigration migrateAll >> runMigration migrateUser)
-  return "migrate requested"
 
 readerServer :: Config -> Server Site
 readerServer cfg = enter (readerToEither cfg) server
@@ -63,6 +58,8 @@ main = do
   srcFile    <- openFile "dataSource.set" ReadMode
   srcUrl     <- hGetLine srcFile
   srcPort    <- hGetLine srcFile >>= return . read
+  cmdArgs    <- getArgs
+  when (elem "migrate" cmdArgs) (migrateDb connPool)
   run 3000 $ staticPolicy' caching (addBase "static")
            $ auth connPool
            $ packErr
@@ -74,3 +71,6 @@ main = do
                                , getSrcPort = srcPort
                                , getMaxQSemN = maxQSemN
                                }
+
+migrateDb :: ConnectionPool -> IO ()
+migrateDb = runSqlPool (runMigration migrateAll >> runMigration migrateUser)

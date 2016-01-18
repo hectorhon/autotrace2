@@ -6,7 +6,6 @@ module API where
 import Servant
 import Servant.HTML.Blaze
 import Text.Blaze.Html5
-import Data.Text (Text)
 import Area.API
 import Blc.API
 import Apc.API
@@ -15,8 +14,7 @@ import Block.API
 import Search.API
 import User.Routes
 
-type Site = "migrate" :> Post '[PlainText] Text
-       :<|> UserRoutes
+type Site = UserRoutes
        :<|> HomePage
        :<|> AreaSite
        :<|> BlcSite
