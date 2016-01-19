@@ -8,6 +8,7 @@ import Database.Persist.Postgresql
 import Data.List (sortOn)
 import Control.Monad (forM_, when)
 import Common.Views
+import Area.Types
 import Area.Links
 import Area.Views
 import Blc.Links

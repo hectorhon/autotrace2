@@ -8,7 +8,7 @@ import Servant.HTML.Blaze
 import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
-import Schema
+import Area.Types
 import User.RequireAuth
 
 type AreaSite = ToCreateArea

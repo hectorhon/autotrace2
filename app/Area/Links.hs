@@ -7,7 +7,7 @@ import Database.Persist.Postgresql
 import Text.Blaze.Html5
 import Common.Links
 import Area.API
-import Schema
+import Area.Types
 
 toCreateAreaLink :: Key Area -> AttributeValue
 toCreateAreaLink pid = stringValue $

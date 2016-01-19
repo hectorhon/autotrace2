@@ -15,6 +15,7 @@ import Data.IntMap (fromAscList, fromList, union, toAscList)
 import Data.List (sortOn)
 import Blc.Queries.Durations
 import AppM
+import Area.Types
 import Schema
 import Time
 

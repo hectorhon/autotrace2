@@ -13,7 +13,7 @@ import Data.Maybe (catMaybes)
 import Blc.Queries.AreaResult
 import Blc.Queries.BlcResult
 import Blc.Queries.DescendantBlcs
-import Schema
+import Area.Types
 import AppM
 
 getResult :: UTCTime -> UTCTime -> Key Area

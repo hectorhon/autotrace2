@@ -6,6 +6,7 @@ module Search.Types where
 import Text.Blaze.Html5 (AttributeValue)
 import Database.Persist.Postgresql
 import Schema
+import Area.Types
 import Area.Links
 import Blc.Links
 

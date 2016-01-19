@@ -13,6 +13,7 @@ import Control.Monad.Trans.Either
 import Data.Maybe
 import Data.Text (Text)
 import AppM
+import Area.Types
 import Schema
 import Time
 import Apc.Issue.API

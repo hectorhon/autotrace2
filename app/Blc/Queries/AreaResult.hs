@@ -9,6 +9,7 @@ import Control.Exception (assert)
 import Control.Monad.IO.Class (liftIO)
 import Blc.Queries.DescendantBlcs
 import Blc.Queries.Durations
+import Area.Types
 import Schema
 import AppM
 import Time

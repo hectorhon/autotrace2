@@ -12,6 +12,7 @@ import Common.Views
 import Apc.Issue.Links
 import Apc.Links
 import Apc.Views (apcNavigation)
+import Area.Types
 import Schema
 import Time
 

@@ -11,10 +11,11 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
 import Data.Text (Text)
 import AppM
-import Schema
+import Area.Types
 import Area.API
 import Area.Views
 import Area.Links
+import Schema
 import Common.Responses
 
 areaSite :: ServerT AreaSite AppM

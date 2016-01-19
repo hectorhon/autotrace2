@@ -8,6 +8,7 @@ import Text.Blaze.Html5
 import Data.Time
 import Common.Links
 import Blc.API
+import Area.Types
 import Schema
 
 toCreateBlcLink :: Key Area -> AttributeValue

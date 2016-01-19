@@ -11,6 +11,7 @@ import Common.Views
 import Area.Links
 import Blc.Links
 import Apc.Links
+import Area.Types
 import Schema
 
 areaHomePage :: [Entity Area] -> Html

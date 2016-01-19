@@ -5,6 +5,7 @@ module Blc.Queries.DescendantBlcs
   ) where
 
 import Database.Persist.Postgresql
+import Area.Types
 import Schema
 import AppM
 

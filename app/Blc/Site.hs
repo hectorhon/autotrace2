@@ -23,6 +23,7 @@ import Blc.Views
 import Blc.Queries
 import Blc.Calculate as B
 import Blc.Links
+import Area.Types
 import Area.Links
 import Area.Calculate as A
 import Common.Responses

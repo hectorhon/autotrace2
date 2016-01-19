@@ -10,6 +10,7 @@ import Data.Aeson
 import Data.HashMap.Strict (fromList)
 import qualified Data.ByteString.Lazy.Char8 as L (unpack, concat)
 import Common.Views
+import Area.Types
 import Area.Links
 import Apc.Links
 import Apc.Issue.Links

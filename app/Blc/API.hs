@@ -8,6 +8,7 @@ import Servant.HTML.Blaze
 import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
+import Area.Types
 import Schema
 import Time
 import User.RequireAuth

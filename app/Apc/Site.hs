@@ -20,6 +20,7 @@ import Apc.API
 import Apc.Views
 import Apc.Links
 import Apc.Calculate
+import Area.Types
 import Area.Links
 import Common.Responses
 import TimeSeriesData (getTSData)

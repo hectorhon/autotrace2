@@ -8,6 +8,7 @@ import Text.Blaze.Html5
 import Data.Time (Day)
 import Common.Links
 import Apc.API
+import Area.Types
 import Schema
 
 toCreateApcLink :: Key Area -> AttributeValue

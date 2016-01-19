@@ -43,7 +43,7 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
   -- Get area demand state
   let CalcOpts _ _ start end = calcOpts
   areaDemand <- runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT
-    (intervalsDuring start end Demand $ blcArea blc)
+    (intervalsDuring start end $ blcArea blc)
   -- Perform the calculations
   (demand, uptimeDemand, uptime, performUptime, mvInterv, spInterv,
    mvSat, cvAffBySat) <- (flip runReaderT) calcOpts $ do

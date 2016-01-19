@@ -5,6 +5,7 @@ import Database.Persist.Postgresql
 import Text.Blaze.Html5
 import Common.Links
 import Apc.Issue.API
+import Area.Types
 import Schema
 
 toCreateApcIssueLink :: Key Area -> Key Apc -> AttributeValue
