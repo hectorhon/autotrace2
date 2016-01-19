@@ -12,6 +12,7 @@ import Area.Links
 import Blc.Links
 import Apc.Links
 import Area.Types
+import Blc.Types
 import Schema
 
 areaHomePage :: [Entity Area] -> Html

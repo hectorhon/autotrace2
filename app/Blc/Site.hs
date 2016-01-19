@@ -16,8 +16,8 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import Data.Text (Text)
 import AppM
-import Schema
 import Time
+import Blc.Types
 import Blc.API
 import Blc.Views
 import Blc.Queries

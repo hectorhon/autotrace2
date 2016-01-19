@@ -12,7 +12,7 @@ import Data.Maybe
 import Data.ByteString.Char8 (ByteString)
 import AppM
 import Config
-import Schema
+import Blc.Types
 import Time
 import Area.Queries.IntervalsDuring
 

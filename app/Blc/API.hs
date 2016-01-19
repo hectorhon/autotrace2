@@ -9,7 +9,7 @@ import Text.Blaze.Html5
 import Database.Persist.Postgresql
 import Data.Text
 import Area.Types
-import Schema
+import Blc.Types
 import Time
 import User.RequireAuth
 

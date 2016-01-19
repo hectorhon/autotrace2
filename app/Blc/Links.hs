@@ -9,7 +9,7 @@ import Data.Time
 import Common.Links
 import Blc.API
 import Area.Types
-import Schema
+import Blc.Types
 
 toCreateBlcLink :: Key Area -> AttributeValue
 toCreateBlcLink aid = stringValue $

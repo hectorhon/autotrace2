@@ -6,7 +6,7 @@ module Blc.Queries.DescendantBlcs
 
 import Database.Persist.Postgresql
 import Area.Types
-import Schema
+import Blc.Types
 import AppM
 
 descendantBlcsOf :: Key Area -> AppM [Key Blc]

@@ -16,7 +16,7 @@ import Data.List (sortOn)
 import Blc.Queries.Durations
 import AppM
 import Area.Types
-import Schema
+import Blc.Types
 import Time
 
 data BlcResult =

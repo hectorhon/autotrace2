@@ -11,9 +11,9 @@ import Common.Views
 import Area.Types
 import Area.Links
 import Area.Views
+import Blc.Types
 import Blc.Links
 import Blc.Queries
-import Schema
 import Time
 
 blcNewPage :: Entity Area -> Html

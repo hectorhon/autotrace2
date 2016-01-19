@@ -7,7 +7,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Schema
   ( module Schema
@@ -15,44 +14,19 @@ module Schema
   ) where
 
 import Database.Persist.TH
-import Database.Persist.Postgresql
 import Servant
 import Control.Monad.Except
 import Data.Maybe (listToMaybe, isJust)
-import Data.Text (unpack, pack)
-import Data.Text.Read (Reader, decimal, double)
+import Data.Text (unpack)
 import Area.Types
 import SchemaTypes
 import Time
+import PersistKeyInstances ()
 
 share [ mkPersist sqlSettings,
         mkMigrate "migrateAll",
         mkDeleteCascade sqlSettings ]
   [persistLowerCase|
-    Blc
-      name         String
-      description  String
-      area         AreaId
-      measTag      String
-      sptTag       String
-      outTag       String
-      outMax       Double
-      outMin       Double
-      demandCond   String
-      uptimeCond   String
-      objective    Objective
-      margin       Double
-      calcMvICond  String
-      calcSpICond  String
-    BlcInterval
-      blc          BlcId
-      start        UTCTime
-      end          UTCTime
-      category     MetricType
-    BlcEvent
-      blc          BlcId
-      time         UTCTime
-      category     EventType
     Apc
       name         String
       area         AreaId
@@ -109,67 +83,6 @@ share [ mkPersist sqlSettings,
       key          String
       value        String
   |]
-
-instance ToBackendKey SqlBackend a => FromText (Key a) where
-  fromText = either (\ _ -> Nothing) (Just . toSqlKey . fromIntegral . fst)
-             . (decimal :: Reader Integer)
-
-instance ToBackendKey SqlBackend a => ToText (Key a) where
-  toText = pack . show . fromSqlKey
-
-instance FromFormUrlEncoded Blc where
-  fromFormUrlEncoded params = runExcept $ do
-    name        <- maybe (throwError "Missing name")
-                         (return . unpack)
-                         (lookup "name" params)
-    description <- maybe (throwError "Missing description")
-                         (return . unpack)
-                         (lookup "description" params)
-    area        <- maybe (throwError "Missing or invalid area")
-                         (return)
-                         (lookup "area" params >>= fromText)
-    measTag     <- maybe (throwError "Missing measurement tag")
-                         (return . unpack)
-                         (lookup "meastag" params)
-    sptTag      <- maybe (throwError "Missing setpoint tag")
-                         (return . unpack)
-                         (lookup "spttag" params)
-    outTag      <- maybe (throwError "Missing output tag")
-                         (return . unpack)
-                         (lookup "outtag" params)
-    outMax      <- maybe (throwError "Missing output max")
-                         (either (throwError . (++) "Output max ")
-                                 (return . fst)
-                          . double)
-                         (lookup "outmax" params)
-    outMin      <- maybe (throwError "Missing output min")
-                         (either (throwError . (++) "Output min ")
-                                 (return . fst)
-                          . double)
-                         (lookup "outmin" params)
-    demandCond  <- maybe (throwError "Missing demand condition")
-                         (return . unpack)
-                         (lookup "demandcond" params)
-    uptimeCond  <- maybe (throwError "Missing uptime condition")
-                         (return . unpack)
-                         (lookup "uptimecond" params)
-    objective   <- maybe (throwError "Missing or invalid objective")
-                         (return . fst)
-                         (lookup "objective" params
-                          >>= listToMaybe . reads . unpack)
-    margin      <- maybe (throwError "Invalid or missing margin")
-                         (either (throwError . (++) "Margin ")
-                                 (return . fst)
-                          . double)
-                         (lookup "margin" params)
-    calcMvICond <- maybe (throwError "Missing calculate MV interv. condition")
-                         (return . unpack)
-                         (lookup "calcmvicond" params)
-    calcSpICond <- maybe (throwError "Missing calculate SP interv. condition")
-                         (return . unpack)
-                         (lookup "calcspicond" params)
-    return $ Blc name description area measTag sptTag outTag outMax outMin
-                 demandCond uptimeCond objective margin calcMvICond calcSpICond
 
 instance FromFormUrlEncoded Apc where
   fromFormUrlEncoded params = runExcept $ do

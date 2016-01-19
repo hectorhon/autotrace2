@@ -15,6 +15,7 @@ import Area.Types
 import Area.API
 import Area.Views
 import Area.Links
+import Blc.Types
 import Schema
 import Common.Responses
 

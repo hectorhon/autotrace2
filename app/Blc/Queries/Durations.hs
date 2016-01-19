@@ -5,7 +5,8 @@ module Blc.Queries.Durations where
 import Database.Esqueleto
 import Data.Time
 import Data.IntMap (fromAscList, fromList, unionWith, union, toAscList)
-import Schema
+import Blc.Types
+import Time ()
 import AppM
 
 durations :: UTCTime -> UTCTime -> [Key Blc] -> MetricType

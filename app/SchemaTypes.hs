@@ -7,15 +7,7 @@ import Database.Persist.TH
 import Data.Aeson
 import GHC.Generics
 
-data Objective = Near | Above | Below deriving (Show, Read, Eq)
-derivePersistField "Objective"
-
-data MetricType = Demand
-                | UptimeDemand
-                | Uptime
-                | PerformUptime
-                | MvSat
-                | CvAffBySat
+data MetricType = Uptime
                 | Exceed
                 deriving (Generic, Show, Read, Eq)
 derivePersistField "MetricType"

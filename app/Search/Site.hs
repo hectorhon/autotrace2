@@ -10,7 +10,7 @@ import Database.Persist.Postgresql
 import Control.Monad (liftM)
 import AppM
 import Area.Types
-import Schema
+import Blc.Types
 import Search.Types
 import Search.API
 import Search.Views
