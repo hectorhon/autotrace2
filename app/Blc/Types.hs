@@ -42,15 +42,18 @@ share [ mkPersist sqlSettings,
       margin       Double
       calcMvICond  String
       calcSpICond  String
-    BlcInterval
-      blc          BlcId
-      start        UTCTime
-      end          UTCTime
-      category     MetricType
-    BlcEvent
-      blc          BlcId
-      time         UTCTime
-      category     EventType
+    BlcResultData
+      blc           BlcId
+      day           Day
+      demand        Double   -- All stats in seconds
+      uptimeDemand  Double
+      uptime        Double
+      performUptime Double
+      modeInterv    Int
+      mvInterv      Int
+      spInterv      Int
+      mvSat         Double
+      cvAffBySat    Double
   |]
 
 instance FromFormUrlEncoded Blc where

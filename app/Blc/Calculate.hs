@@ -4,11 +4,10 @@ module Blc.Calculate
 
 import TimeSeriesData
 import Database.Persist.Postgresql
-import qualified Database.Esqueleto as E
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Concurrent
-import Data.Maybe
+import Control.Exception (assert)
 import Data.ByteString.Char8 (ByteString)
 import AppM
 import Config
@@ -45,14 +44,13 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
   areaDemand <- runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT
     (intervalsDuring start end $ blcArea blc)
   -- Perform the calculations
-  (demand, uptimeDemand, uptime, performUptime, mvInterv, spInterv,
-   mvSat, cvAffBySat) <- (flip runReaderT) calcOpts $ do
+  results <- (flip runReaderT) calcOpts $ do
     let filterCounts n = map fst . filter ((== n) . snd)
-    demand   <- calcInterval (blcDemandCond blc)
-    let demand' = filterCounts 2 $ counts [areaDemand, demand]
-    uptime   <- calcInterval (blcUptimeCond blc)
+    demand' <- calcInterval (blcDemandCond blc)
+    let demand = filterCounts 2 $ counts [areaDemand, demand']
+    uptime <- calcInterval (blcUptimeCond blc)
     let uptimeDemand = filterCounts 2 $ counts [demand', uptime]
-    perform  <- calcInterval $
+    perform <- calcInterval $
       let margin  = show $ blcMargin blc
           measTag = blcMeasTag blc
           sptTag  = blcSptTag blc
@@ -62,6 +60,7 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
            Above -> concat ["[", sptTag,  "]-[", measTag, "]<", margin]
            Below -> concat ["[", measTag, "]-[", sptTag,  "]<", margin]
     let performUptime = filterCounts 2 $ counts [perform, uptime]
+    let modeInterv = map snd uptime
     calcMvI  <- calcInterval (blcCalcMvICond blc)
     calcSpI  <- calcInterval (blcCalcSpICond blc)
     mvInterv <- calcChange (blcOutTag blc) calcMvI
@@ -74,30 +73,23 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
                           , "[", outTag, "]<=", outMin ]
     let notPerform = filterCounts 0 $ counts [perform]
     let cvAffBySat = filterCounts 2 $ counts [notPerform, mvSat]
-    return (demand', uptimeDemand, uptime, performUptime,
-            mvInterv, spInterv, mvSat, cvAffBySat)
+    let days = [utcToLocalDay start .. addDays (-1) (utcToLocalDay end)]
+    return $ zipWith10' (BlcResultData kBlc) days
+                                             (sumByDay days demand)
+                                             (sumByDay days uptimeDemand)
+                                             (sumByDay days uptime)
+                                             (sumByDay days performUptime)
+                                             (sumByDay' days modeInterv)
+                                             (sumByDay' days mvInterv)
+                                             (sumByDay' days spInterv)
+                                             (sumByDay days mvSat)
+                                             (sumByDay days cvAffBySat)
   -- Write to database
-  let cleanRange' = cleanRange start end kBlc
-  let writeIntervals' = writeIntervals start end kBlc
   runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT (do
-    cleanRange' Demand
-    cleanRange' UptimeDemand
-    cleanRange' Uptime
-    cleanRange' PerformUptime
-    deleteWhere [ BlcEventTime>.start, BlcEventTime<=.end, BlcEventBlc==.kBlc ]
-    cleanRange' MvSat
-    cleanRange' CvAffBySat
-    writeIntervals' Demand demand
-    writeIntervals' UptimeDemand uptimeDemand
-    writeIntervals' Uptime uptime
-    writeIntervals' PerformUptime performUptime
-    forM_ mvInterv $
-      (\t -> insert_ $ BlcEvent kBlc t MvInterv) . ((flip addUTCTime) refTime)
-    forM_ spInterv $
-      (\t -> insert_ $ BlcEvent kBlc t SpInterv) . ((flip addUTCTime) refTime)
-    writeIntervals' MvSat mvSat
-    writeIntervals' CvAffBySat cvAffBySat
-    )
+    deleteWhere [ BlcResultDataBlc ==. kBlc
+                , BlcResultDataDay >=. utcToLocalDay start
+                , BlcResultDataDay <.  utcToLocalDay end ]
+    insertMany_ results)
   -- Release lock
   modifyMVar_ counter (return . (flip (-)) 1)
   signalQSemN qsemn 1
@@ -116,66 +108,25 @@ calcChange tagName intervals = do
     tsPoints <- lift $ getTSPoints src port start end tagName
     return (changesIn tsPoints intervals)
 
-cleanRange :: UTCTime -> UTCTime -> Key Blc -> MetricType -> SqlPersistT IO ()
-cleanRange start end kBlc metricType = do
-  -- Between start and end
-  deleteWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalStart    >=. start
-              , BlcIntervalEnd      <=. end ]
-  -- Overlap start
-  updateWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalEnd      >.  start
-              , BlcIntervalEnd      <=. end ]
-              [ BlcIntervalEnd      =.  start ]
-  -- Overlap end
-  updateWhere [ BlcIntervalBlc      ==. kBlc
-              , BlcIntervalCategory ==. metricType
-              , BlcIntervalStart    >=. start
-              , BlcIntervalStart    <.  end ]
-              [ BlcIntervalStart    =.  end ]
-  -- Overlap both start and end
-  exceedRanges <- selectList [ BlcIntervalBlc      ==. kBlc
-                             , BlcIntervalCategory ==. metricType
-                             , BlcIntervalStart    <.  start
-                             , BlcIntervalEnd      >.  end ] []
-  forM_ exceedRanges (\ (Entity kr r) -> do
-    update kr [ BlcIntervalEnd =. start ]
-    insert_ $ BlcInterval (blcIntervalBlc r) end (blcIntervalEnd r) metricType)
+zipWith10' :: (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> z)
+           -> [a] -> [b] -> [c] -> [d] -> [e]
+           -> [f] -> [g] -> [h] -> [i] -> [j] -> [z]
+zipWith10' fx c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 = assert
+  (   length c1 == length c2 && length c2 == length c3
+   && length c3 == length c4 && length c4 == length c5
+   && length c5 == length c6 && length c6 == length c7
+   && length c7 == length c8 && length c8 == length c9
+   && length c9 == length c10)
+  (zipWith10 fx c1 c2 c3 c4 c5 c6 c7 c8 c9 c10)
 
-writeIntervals :: UTCTime -> UTCTime -> Key Blc -> MetricType -> [TSInterval]
-               -> SqlPersistT IO ()
-writeIntervals start end kBlc metricType intervals =
-  forM_ (fmap g intervals) f where
-    g (s, e) = ( max (addUTCTime s refTime) start
-               , min (addUTCTime e refTime) end   )
-    insert_' s e = insert_ $ BlcInterval kBlc s e metricType
-    f (s, e)
-      | s == start && e < end = do
-        numAffected <- E.updateCount $ \ u -> do
-          E.set u [ BlcIntervalEnd E.=. E.val e ]
-          E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                     E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                     E.&&. (u E.^. BlcIntervalEnd)      E.==. E.val start )
-        when (numAffected == 0) (insert_' s e)
-      | e == end && s > start = do
-        numAffected <- E.updateCount $ \ u -> do
-          E.set u [ BlcIntervalStart E.=. E.val s ]
-          E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                     E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                     E.&&. (u E.^. BlcIntervalStart)    E.==. E.val end )
-        when (numAffected == 0) (insert_' s e)
-      | s == start && e == end = do
-          atEnd <- selectFirst [ BlcIntervalBlc      ==. kBlc
-                               , BlcIntervalCategory ==. metricType
-                               , BlcIntervalStart    ==. end ] []
-          let latestE = maybe e (blcIntervalEnd . entityVal) atEnd
-          when (isJust atEnd) (delete $ entityKey $ fromJust atEnd)
-          numAffected <- E.updateCount $ \ u -> do
-            E.set u [ BlcIntervalEnd E.=. E.val latestE ]
-            E.where_ (       (u E.^. BlcIntervalBlc)      E.==. E.val kBlc
-                       E.&&. (u E.^. BlcIntervalCategory) E.==. E.val metricType
-                       E.&&. (u E.^. BlcIntervalEnd)      E.==. E.val start )
-          when (numAffected == 0) (insert_' s latestE)
-      | otherwise = insert_' s e
+zipWith10 :: (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> z)
+         -> [a] -> [b] -> [c] -> [d] -> [e]
+         -> [f] -> [g] -> [h] -> [i] -> [j] -> [z]
+zipWith10 fx c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 =
+  if (   null c1 || null c2 || null c3 || null c4 || null c5
+      || null c6 || null c7 || null c8 || null c9 || null c10 ) then []
+  else (fx (head c1) (head c2) (head c3) (head c4) (head c5)
+           (head c6) (head c7) (head c8) (head c9) (head c10))
+         :
+         (zipWith10 fx (tail c1) (tail c2) (tail c3) (tail c4) (tail c5)
+                       (tail c6) (tail c7) (tail c8) (tail c9) (tail c10))
