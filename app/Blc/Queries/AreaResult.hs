@@ -5,10 +5,7 @@ module Blc.Queries.AreaResult
 
 import Database.Esqueleto
 import Data.Time
-import Control.Exception (assert)
-import Control.Monad.IO.Class (liftIO)
 import Blc.Queries.DescendantBlcs
-import Blc.Queries.Durations
 import Area.Types
 import Blc.Types
 import AppM
@@ -26,60 +23,53 @@ data AreaResult =
              Double           -- ^ CV affected by saturation
 
 getAreaResult :: UTCTime -> UTCTime -> Key Area -> AppM (Maybe AreaResult)
-getAreaResult start end aid =
-  let d (k1, n1) (k2, n2) = assert (k1 == k2) (if n2 /= 0 then n1 / n2 else 1)
-  in do
-    mArea <- runDb (get aid)
-    case mArea of
-      Nothing -> return Nothing
-      Just area -> do
-        bids <- descendantBlcsOf aid
-        uptimeDemands <- durations start end bids UptimeDemand
-        demands <- durations start end bids Demand
-        performUptimes <- durations start end bids PerformUptime
-        uptimes <- durations start end bids Uptime
-        let numComply = length $ filter (> 0.95) $
-                        assert (length uptimeDemands == length demands) $
-                        zipWith d uptimeDemands demands
-        let numQuality = length $ filter (> 0.95) $
-                         assert (length performUptimes == length uptimes) $
-                         zipWith d performUptimes uptimes
-        modeInterv <- getModeInterv start end bids
-        mvInterv <- numEvents start end bids MvInterv
-        spInterv <- numEvents start end bids SpInterv
-        mvSat <- durations start end bids MvSat
-        cvAffBySat <- durations start end bids CvAffBySat
-        let totalDuration = diffUTCTime end start * realToFrac (length bids)
-        let mvSat' = if totalDuration /= 0
-                     then realToFrac $ sum (map snd mvSat) / totalDuration
-                     else assert (sum (map snd mvSat) == 0) 0
-        let cvAffBySat' =
-              if totalDuration /= 0
-              then realToFrac $ sum (map snd cvAffBySat) / totalDuration
-              else assert (sum (map snd cvAffBySat) == 0) 0
-        return $ Just $ AreaResult (Entity aid area)
-          numComply numQuality (length bids)
-          modeInterv mvInterv spInterv mvSat' cvAffBySat'
-
-getModeInterv :: UTCTime -> UTCTime -> [Key Blc] -> AppM Int
-getModeInterv start end bids = do
-  today <- liftIO (relativeDay 0)
-  modeInterv <- runDb $ select $ from $ \ i -> do
-    let a = i ^. BlcIntervalEnd >. val start
-            &&. i ^. BlcIntervalEnd <=. val end
-    let b = i ^. BlcIntervalCategory ==. val Uptime
-    let c = i ^. BlcIntervalBlc `in_` valList bids
-    let d = i ^. BlcIntervalEnd !=. val today
-    where_ (a &&. b &&. c &&. d)
-    return $ count (i ^. BlcIntervalEnd)
-  return (unValue $ head modeInterv)
-
-numEvents :: UTCTime -> UTCTime -> [Key Blc] -> EventType -> AppM Int
-numEvents start end bids eventType = do
-  num <- runDb $ select $ from $ \ i -> do
-    let a = i ^. BlcEventTime >=. val start &&. i ^. BlcEventTime <=. val end
-    let b = i ^. BlcEventCategory ==. val eventType
-    let c = i ^. BlcEventBlc `in_` valList bids
-    where_ (a &&. b &&. c)
-    return $ count (i ^. BlcEventTime)
-  return (unValue $ head num)
+getAreaResult start end aid = do
+  mArea <- runDb (get aid)
+  case mArea of
+    Nothing -> return Nothing
+    Just area -> do
+      bids <- descendantBlcsOf aid
+      results' <- runDb $ select $ from $ \ d -> do
+        where_ (d ^. BlcResultDataBlc `in_` (valList bids)
+                &&. d ^. BlcResultDataDay >=. (val $ utcToLocalDay start)
+                &&. d ^. BlcResultDataDay <.  (val $ utcToLocalDay end))
+        groupBy (d ^. BlcResultDataBlc)
+        return ( sum_ (d ^. BlcResultDataDemand)
+               , sum_ (d ^. BlcResultDataUptimeDemand)
+               , sum_ (d ^. BlcResultDataUptime)
+               , sum_ (d ^. BlcResultDataPerformUptime)
+               , sum_ (d ^. BlcResultDataModeInterv)
+               , sum_ (d ^. BlcResultDataMvInterv)
+               , sum_ (d ^. BlcResultDataSpInterv)
+               , sum_ (d ^. BlcResultDataMvSat)
+               , sum_ (d ^. BlcResultDataCvAffBySat))
+      let f (Value mx) = maybe (0 :: Double) id mx
+      let dv a b = if b == 0 then 1 else (a :: Double) / (b :: Double)
+      let results = (flip map) results' $
+            \ (demand, uptimeDemand, uptime, performUptime,
+               modeInterv, mvInterv, spInterv, mvSat, cvAffBySat) ->
+              ((f uptimeDemand) `dv` (f demand),
+               (f performUptime) `dv` (f uptime),
+               f modeInterv, f mvInterv, f spInterv, f mvSat, f cvAffBySat)
+      let complianceCount = foldr (\ (compliance,_,_,_,_,_,_) acc ->
+            if compliance >= 0.95 then acc + 1 else acc) 0 results
+      let qualityCount = foldr (\ (_,quality,_,_,_,_,_) acc ->
+            if quality >= 0.95 then acc + 1 else acc) 0 results
+      let modeInterv = truncate $
+            foldr (\ (_,_,v,_,_,_,_) acc -> acc + v) 0 results
+      let mvInterv = truncate $
+            foldr (\ (_,_,_,v,_,_,_) acc -> acc + v) 0 results
+      let spInterv = truncate $
+            foldr (\ (_,_,_,_,v,_,_) acc -> acc + v) 0 results
+      let totalDuration = diffUTCTime end start * realToFrac (length bids)
+      let mvSat =
+            if totalDuration == 0 then 0
+            else (foldr (\ (_,_,_,_,_,v,_) acc -> acc + v) 0 results
+                  / (realToFrac totalDuration))
+      let cvAffBySat =
+            if totalDuration == 0 then 0
+            else (foldr (\ (_,_,_,_,_,_,v) acc -> acc + v) 0 results
+                  / (realToFrac totalDuration))
+      return $ Just (AreaResult (Entity aid area)
+                                complianceCount qualityCount (length bids)
+                                modeInterv mvInterv spInterv mvSat cvAffBySat)

@@ -2,9 +2,9 @@ module Blc.Queries
   ( AreaResult (AreaResult)
   , BlcResult (BlcResult)
   , getResult
+  , getBadCompliances
+  , getBadQualities
   , descendantBlcsOf
-  , getCompliances
-  , getQualities
   ) where
 
 import Database.Esqueleto

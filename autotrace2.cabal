@@ -25,6 +25,7 @@ library
                      , TimeSeriesData.Changes
                      , TimeSeriesData.Expressions
                      , TimeSeriesData.Interpolate
+                     , TimeSeriesData.Summary
   ghc-options:         -Wall -O
   build-depends:       base >= 4.7 && < 5
                      , bytestring
@@ -63,7 +64,6 @@ executable autotrace2-exe
                      , Blc.Queries.AreaResult
                      , Blc.Queries.BlcResult
                      , Blc.Queries.DescendantBlcs
-                     , Blc.Queries.Durations
                      , Apc.API
                      , Apc.Links
                      , Apc.Site

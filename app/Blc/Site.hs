@@ -140,25 +140,12 @@ viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
                    (return . localDayToUTC)
                    mEnd
       bids <- descendantBlcsOf aid
-      compliances <- getCompliances start end bids
-      qualities <- getQualities start end bids
       let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
       let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
-      let badComplies = catMaybes $ flip map compliances $ \ (k, mv) -> do
-            case mv of Nothing -> Nothing
-                       Just v  -> if v < complianceTarget then Just (k, v)
-                                  else Nothing
-      let badQualities = catMaybes $ flip map qualities $ \ (k, mv) ->
-            case mv of Nothing -> Nothing
-                       Just v  -> if v < qualityTarget then Just (k, v)
-                                  else Nothing
-      let getBlc (bid, v) = runDb (get bid)
-            >>= maybe (return Nothing)
-                      (\ blc -> return (Just (Entity bid blc, v)))
-      badComplies' <- liftM catMaybes $ mapM getBlc badComplies
-      badQualities' <- liftM catMaybes $ mapM getBlc badQualities
+      badComplies <- getBadCompliances start end complianceTarget bids
+      badQualities <- getBadQualities start end qualityTarget bids
       return (areaBlcBadActorsPage start end area
-              complianceTarget qualityTarget badComplies' badQualities')
+              complianceTarget qualityTarget badComplies badQualities)
 
 toCalculateAreaBlcs :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 toCalculateAreaBlcs aid mStart mEnd = do

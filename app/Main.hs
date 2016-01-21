@@ -18,6 +18,7 @@ import Data.ByteString.Char8 (pack)
 import Config
 import AppM
 import Area.Types
+import Blc.Types
 import Schema
 import API
 import Area.Site
@@ -76,4 +77,5 @@ main = do
 migrateDb :: ConnectionPool -> IO ()
 migrateDb = runSqlPool (do runMigration migrateAll
                            runMigration migrateArea
+                           runMigration migrateBlc
                            runMigration migrateUser)
