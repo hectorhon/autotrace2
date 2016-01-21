@@ -49,7 +49,7 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
     demand' <- calcInterval (blcDemandCond blc)
     let demand = filterCounts 2 $ counts [areaDemand, demand']
     uptime <- calcInterval (blcUptimeCond blc)
-    let uptimeDemand = filterCounts 2 $ counts [demand', uptime]
+    let uptimeDemand = filterCounts 2 $ counts [demand, uptime]
     perform <- calcInterval $
       let margin  = show $ blcMargin blc
           measTag = blcMeasTag blc
