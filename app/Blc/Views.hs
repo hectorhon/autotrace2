@@ -111,6 +111,7 @@ areaBlcBadActorsPage start end (Entity aid area)
       col ! class_ "bad-actors-table-col-2"
       col ! class_ "bad-actors-table-col-3"
       col ! class_ "bad-actors-table-col-4"
+      tr $ th "#" >> th "Controller" >> th "Description" >> th "Quality (%)"
       forM_ (zip [1..] $ reverse $ sortOn snd badQualities)
             (\ (index, (Entity bid blc, quality)) -> tr $ do
                  td $ toHtml (show (index :: Int))
