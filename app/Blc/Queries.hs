@@ -134,7 +134,7 @@ criteria i bids start end = where_ (i ^. BlcResultDataBlc `in_` (valList bids)
 getAreaResult :: Day -> Day -> Entity Area -> SqlPersistT IO AreaResult
 getAreaResult start end (Entity aid area) = do
   bids <- descendantBlcsOf aid
-  complyCount <- select $ from $ \ i -> do
+  complyCount <- fmap length $ select $ from $ \ i -> do
     criteria i bids start end
     let uptimeDemand = coalesceDefault
                        [sum_ (i ^. BlcResultDataUptimeDemand)]
@@ -146,8 +146,8 @@ getAreaResult start end (Entity aid area) = do
                            ( else_ $ uptimeDemand /. demand )
     having (compliance >=. val 0.95)
     groupBy (i ^. BlcResultDataBlc)
-    return (countDistinct (i ^. BlcResultDataBlc))
-  qualityCount <- select $ from $ \ i -> do
+    return (i ^. BlcResultDataBlc)
+  qualityCount <- fmap length $ select $ from $ \ i -> do
     criteria i bids start end
     let performUptime = coalesceDefault
                         [sum_ (i ^. BlcResultDataPerformUptime)]
@@ -159,7 +159,7 @@ getAreaResult start end (Entity aid area) = do
                         ( else_ $ performUptime /. uptime )
     having (quality >=. val 0.95)
     groupBy (i ^. BlcResultDataBlc)
-    return (countDistinct (i ^. BlcResultDataBlc))
+    return (i ^. BlcResultDataBlc)
   modeInterv <- select $ from $ \ i -> do
     criteria i bids start end
     return $ sum_ (i ^. BlcResultDataModeInterv)
@@ -184,7 +184,7 @@ getAreaResult start end (Entity aid area) = do
                    ( else_ $ cvAffBySat /. duration )
   let f xs = if null xs then 0 else unValue (head xs)
   let g = maybe 0 (truncate :: Double -> Int) . unValue . head
-  return $ AreaResult (Entity aid area) (f complyCount) (f qualityCount)
+  return $ AreaResult (Entity aid area) complyCount qualityCount
                       (length bids)
                       (g modeInterv) (g mvInterv) (g spInterv)
                       (f mvSat) (f cvAffBySat)
