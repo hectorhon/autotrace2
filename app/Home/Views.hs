@@ -10,5 +10,5 @@ import Apc.Links
 
 homePage :: Html
 homePage = layout "Home" $ do
-  p $ a ! href viewAreasLink $ "Browse base layer controllers"
+  p $ a ! href (viewAreasLink "blc") $ "Browse base layer controllers"
   p $ a ! href viewApcsLink $ "Browse APCs"

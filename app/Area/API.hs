@@ -36,7 +36,7 @@ type CreateArea = "area" :> "new"
 type ViewArea = "area" :> Capture "aid" (Key Area)
                 :> Get '[HTML] Html
 
-type ViewAreas = "area" :> Get '[HTML] Html
+type ViewAreas = "area" :> QueryParam "browse" String :> Get '[HTML] Html
 
 type ToEditArea = "area" :> Capture "aid" (Key Area) :> "edit"
                   :> RequireAuth WriteRole'

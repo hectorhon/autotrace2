@@ -19,12 +19,12 @@ toCreateTopAreaLink = stringValue $
 
 
 
-viewAreasLink' :: String
-viewAreasLink' =
-  "/" ++ show (linkTo (Proxy :: Proxy ViewAreas))
+viewAreasLink' :: String -> String
+viewAreasLink' target =
+  "/" ++ show (linkTo (Proxy :: Proxy ViewAreas) target)
 
-viewAreasLink :: AttributeValue
-viewAreasLink = stringValue viewAreasLink'
+viewAreasLink :: String -> AttributeValue
+viewAreasLink = stringValue . viewAreasLink'
 
 
 

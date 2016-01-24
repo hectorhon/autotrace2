@@ -15,14 +15,16 @@ import Area.Types
 import Blc.Types
 import Schema
 
-areaHomePage :: [Entity Area] -> Html
-areaHomePage areas = layout "Site list" $ do
+areaHomePage :: String -> [Entity Area] -> Html
+areaHomePage target areas = layout "Site list" $ do
   h1 "Select a plant"
   ul $ do
-    forM_ areas (\ (Entity aid area) ->
-      li $ a ! href (viewBlcsPerformanceDefaultDayLink aid)
-             $ toHtml (areaName area))
+    forM_ areas
+      (\ (Entity aid area) -> li $ a ! href (goto aid) $ toHtml (areaName area))
     li $ a ! href toCreateTopAreaLink $ "New plant..."
+  where goto aid | target == "area" = viewAreaLink aid
+                 | target == "blc"  = viewBlcsPerformanceDefaultDayLink aid
+                 | otherwise        = viewAreaLink aid
 
 areaNewPage :: Maybe (Entity Area) -> Html
 areaNewPage mParent = layout "New area" $ do
@@ -77,7 +79,8 @@ areaForm mParent mArea = let Entity kParent parent = fromJust mParent in
       hiddenField "parent" (show $ fromSqlKey kParent)
     field "Demand condition" "demandcond"  areaDemandCond  mArea
     button "Save"
-    when (isJust mArea) (deleteButton "area-delete-button" viewAreasLink')
+    when (isJust mArea)
+         (deleteButton "area-delete-button" $ viewAreasLink' "area")
     cancelButton "area-cancel-button"
 
 areaDD :: Area -> Maybe (Entity Area) -> Html

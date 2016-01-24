@@ -51,7 +51,7 @@ apcsPage apcs = layout "APC list" $ do
         $ toHtml (apcName apc))
   p $ do
     H.span "To create a new APC, select the specific area "
-    a ! href viewAreasLink $ "here"
+    a ! href (viewAreasLink "area") $ "here"
     H.span "."
 
 apcCalculatePage :: Day -> Day -> Entity Apc -> Html

@@ -53,10 +53,10 @@ viewArea aid = do
       apcs <- runDb $ selectList [ApcArea ==. aid] []
       return (areaIdPage area mParent children blcs apcs)
 
-viewAreas :: AppM Html
-viewAreas = do
-   areas <- runDb $ selectList [AreaParent ==. Nothing] []
-   return (areaHomePage areas)
+viewAreas :: Maybe String -> AppM Html
+viewAreas mTarget = do
+  areas <- runDb $ selectList [AreaParent ==. Nothing] []
+  return (areaHomePage (maybe "area" id mTarget) areas)
 
 toEditArea :: Key Area -> AppM Html
 toEditArea aid = do
