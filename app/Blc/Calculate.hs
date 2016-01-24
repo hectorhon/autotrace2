@@ -15,9 +15,9 @@ import Blc.Types
 import Time
 import Area.Queries.IntervalsDuring
 
-data CalcOpts = CalcOpts String Int UTCTime UTCTime
+data CalcOpts = CalcOpts String Int Day Day
 
-markCalculate :: UTCTime -> UTCTime -> Key Blc -> AppM ()
+markCalculate :: Day -> Day -> Key Blc -> AppM ()
 markCalculate start end bid = do
   qsemn   <- asks getQSemN
   counter <- asks getCounter
@@ -42,7 +42,9 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
   -- Get area demand state
   let CalcOpts _ _ start end = calcOpts
   areaDemand <- runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT
-    (intervalsDuring start end $ blcArea blc)
+    (intervalsDuring (localDayToUTC start)
+                     (localDayToUTC (addDays 1 end))
+                     (blcArea blc))
   -- Perform the calculations
   results <- (flip runReaderT) calcOpts $ do
     let filterCounts n = map fst . filter ((== n) . snd)
@@ -73,7 +75,7 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
                           , "[", outTag, "]<=", outMin ]
     let notPerform = filterCounts 0 $ counts [perform]
     let cvAffBySat = filterCounts 2 $ counts [notPerform, mvSat]
-    let days = [utcToLocalDay start .. addDays (-1) (utcToLocalDay end)]
+    let days = [start .. end]
     return $ zipWith10' (BlcResultData kBlc) days
                                              (sumByDay days demand)
                                              (sumByDay days uptimeDemand)
@@ -87,8 +89,8 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
   -- Write to database
   runNoLoggingT $ withPostgresqlConn connStr $ lift . runReaderT (do
     deleteWhere [ BlcResultDataBlc ==. kBlc
-                , BlcResultDataDay >=. utcToLocalDay start
-                , BlcResultDataDay <.  utcToLocalDay end ]
+                , BlcResultDataDay >=. start
+                , BlcResultDataDay <=. end ]
     insertMany_ results)
   -- Release lock
   modifyMVar_ counter (return . (flip (-)) 1)
@@ -99,14 +101,18 @@ calcInterval condition = case parseExpression condition of
   Left  _          -> return []
   Right condition' -> do
     CalcOpts src port start end <- ask
-    tsData <- lift $ getTSData src port (listTags condition') start end
+    let start' = localDayToUTC start
+    let end'   = localDayToUTC (addDays 1 end)
+    tsData <- lift $ getTSData src port (listTags condition') start' end'
     return (evaluate condition' tsData)
 
 calcChange :: String -> [TSInterval] -> ReaderT CalcOpts IO [NominalDiffTime]
 calcChange tagName intervals = do
-    CalcOpts src port start end <- ask
-    tsPoints <- lift $ getTSPoints src port start end tagName
-    return (changesIn tsPoints intervals)
+  CalcOpts src port start end <- ask
+  let start' = localDayToUTC start
+  let end'   = localDayToUTC (addDays 1 end)
+  tsPoints <- lift $ getTSPoints src port start' end' tagName
+  return (changesIn tsPoints intervals)
 
 zipWith10' :: (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> z)
            -> [a] -> [b] -> [c] -> [d] -> [e]

@@ -27,7 +27,7 @@ refTime = UTCTime (fromGregorian 1970 1 1) 0
 -- * Servant instances
 
 instance ToText Day where
-  toText = pack . formatDay . flip UTCTime 0
+  toText = pack . formatDay
 
 instance FromText Day where
   fromText = parseDay . unpack
@@ -97,8 +97,11 @@ parseClock = parseTimeM True defaultTimeLocale "%R"
 
 -- * Format to a string
 
-formatDay :: UTCTime -> String
-formatDay = formatTime defaultTimeLocale "%d . %m . %Y" . utcToLocalTime tz
+formatDay :: Day -> String
+formatDay = formatTime defaultTimeLocale "%d . %m . %Y"
+
+formatDay' :: UTCTime -> String
+formatDay' = formatTime defaultTimeLocale "%d . %m . %Y" . utcToLocalTime tz
 
 formatShort :: UTCTime -> String
 formatShort = formatTime defaultTimeLocale "%d/%m %R". utcToLocalTime tz
@@ -111,8 +114,12 @@ formatClock = formatTime defaultTimeLocale "%R" . utcToLocalTime tz
 
 -- * Relative time
 
-relativeDay :: Integer -> IO UTCTime
+relativeDay :: Integer -> IO Day
 relativeDay offset = getCurrentTime
+  >>= return . addDays offset . utcToLocalDay
+
+relativeDay' :: Integer -> IO UTCTime
+relativeDay' offset = getCurrentTime
   >>= return . localDayToUTC . addDays offset . utcToLocalDay
 
 localDayToUTC :: Day -> UTCTime

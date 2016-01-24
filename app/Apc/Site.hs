@@ -101,15 +101,17 @@ toCalculateApc aid apcId mStart mEnd = do
   case mApc of
     Nothing  -> lift (left err404)
     Just apc -> do
-      start <- maybe (liftIO $ relativeDay (-1)) (return . localDayToUTC) mStart
-      end   <- maybe (liftIO $ relativeDay 0) (return . localDayToUTC) mEnd
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
       return (apcCalculatePage start end apc)
 
 calculateApc :: Key Area -> Key Apc -> (Day, Day) -> AppM Text
 calculateApc aid apcId (start, end) = do
   runDb (selectFirst [ApcArea ==. aid, ApcId ==. apcId] [])
   >>= maybe (lift $ left err404)
-            (markCalculate (localDayToUTC start) (localDayToUTC end))
+            (markCalculate (localDayToUTC start)
+                           (localDayToUTC (addDays 1 end)))
   >> redirect (viewApcLink' aid apcId)
   >> return undefined
 
@@ -119,33 +121,37 @@ viewApcPerformance aid apcId mStart mEnd = do
   case mApc of
     Nothing  -> lift (left err404)
     Just apc -> do
-      start <- maybe (liftIO $ relativeDay (-1)) (return . localDayToUTC) mStart
-      end   <- maybe (liftIO $ relativeDay 0) (return . localDayToUTC) mEnd
-      uptimes <- runDb $ (flip selectList) [Asc ApcIntervalStart]
-                 ([ApcIntervalApc ==. apcId] ++
-                  (    [ApcIntervalStart >=. start, ApcIntervalStart <.  end]
-                   ||. [ApcIntervalEnd   >.  start, ApcIntervalEnd   <=. end]
-                   ||. [ApcIntervalStart <=. start, ApcIntervalEnd   >=. end]))
-      issues <- runDb $ (flip selectList) [Asc ApcIssueStart]
-                ([ApcIssueApc ==. apcId] ++
-                 (    [ApcIssueStart  >=. start, ApcIssueStart <.  end]
-                  ||. [ApcIssueEnd    >.  start, ApcIssueEnd   <=. end]
-                  ||. [ApcIssueStart  <=. start, ApcIssueEnd   >=. end]))
-      cvs <- runDb $ selectList [CvApc ==. apcId] [Asc CvName]
-      cvExceeds <- runDb $ E.select $ E.from $
-        \ (i `E.InnerJoin` cv `E.InnerJoin` a) -> do
-          E.on (cv E.^. CvApc E.==. a E.^. ApcId)
-          E.on (i E.^. CvIntervalCv E.==. cv E.^. CvId)
-          E.where_ ((a E.^. ApcId E.==. E.val apcId) E.&&. (
-                  (     (i E.^. CvIntervalStart E.>=. E.val start)
-                  E.&&. (i E.^. CvIntervalStart E.<.  E.val end))
-            E.||. (     (i E.^. CvIntervalEnd   E.>.  E.val start)
-                  E.&&. (i E.^. CvIntervalEnd   E.<=. E.val end))
-            E.||. (     (i E.^. CvIntervalStart E.<=. E.val start)
-                  E.&&. (i E.^. CvIntervalEnd   E.>=. E.val end))
-            ))
-          return i
-      return (apcPerformancePage apc start end uptimes issues cvs cvExceeds)
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
+      let start' = localDayToUTC start
+      let end' = localDayToUTC (addDays 1 end)
+      (uptimes, issues, cvs, cvExceeds) <- runDb $ do
+        uptimes <- (flip selectList) [Asc ApcIntervalStart]
+          ([ApcIntervalApc ==. apcId] ++
+           (    [ApcIntervalStart >=. start', ApcIntervalStart <.  end']
+            ||. [ApcIntervalEnd   >.  start', ApcIntervalEnd   <=. end']
+            ||. [ApcIntervalStart <=. start', ApcIntervalEnd   >=. end']))
+        issues <- (flip selectList) [Asc ApcIssueStart]
+          ([ApcIssueApc ==. apcId] ++
+           (    [ApcIssueStart  >=. start', ApcIssueStart <.  end']
+            ||. [ApcIssueEnd    >.  start', ApcIssueEnd   <=. end']
+            ||. [ApcIssueStart  <=. start', ApcIssueEnd   >=. end']))
+        cvs <- selectList [CvApc ==. apcId] [Asc CvName]
+        cvExceeds <- E.select $ E.from $
+          \ (i `E.InnerJoin` cv `E.InnerJoin` a) -> do
+            E.on (cv E.^. CvApc E.==. a E.^. ApcId)
+            E.on (i E.^. CvIntervalCv E.==. cv E.^. CvId)
+            E.where_ $ (a E.^. ApcId E.==. E.val apcId) E.&&. (
+                    (i E.^. CvIntervalStart E.>=. E.val start'
+                     E.&&. i E.^. CvIntervalStart E.<.  E.val end')
+              E.||. (i E.^. CvIntervalEnd   E.>.  E.val start'
+                     E.&&. i E.^. CvIntervalEnd   E.<=. E.val end')
+              E.||. (i E.^. CvIntervalStart E.<=. E.val start'
+                     E.&&. i E.^. CvIntervalEnd   E.>=. E.val end'))
+            return i
+        return (uptimes, issues, cvs, cvExceeds)
+      return $ apcPerformancePage apc start end uptimes issues cvs cvExceeds
 
 
 
@@ -212,10 +218,9 @@ viewApcCvTrend aid apcId cid mStart mEnd = do
       case mCv of
         Nothing -> lift (left err404)
         Just ecv@(Entity _ cv) -> do
-          start  <- maybe (liftIO $ relativeDay (-1))
-                          (return . localDayToUTC) mStart
-          end    <- maybe (liftIO $ relativeDay 0)
-                          (return . localDayToUTC) mEnd
+          yesterday <- liftIO (relativeDay (-1))
+          let start = localDayToUTC (maybe yesterday id mStart)
+          let end = localDayToUTC (addDays 1 (maybe yesterday id mEnd))
           src    <- asks getSrcUrl
           port   <- asks getSrcPort
           let tags = [ cvSrlTag cv, cvMeasTag cv, cvSrhTag cv ]

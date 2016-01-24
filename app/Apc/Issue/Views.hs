@@ -47,7 +47,7 @@ apcIssuesPage issues (Entity aid apc) = layout "APC issues" $ do
       th "Edit"
     forM_ issues (\ (Entity iid issue) -> tr $ do
       td $ toHtml (show $ fromSqlKey iid)
-      td $ toHtml (formatDay $ apcIssueStart issue)
+      td $ toHtml (formatDay' $ apcIssueStart issue)
       let duration = roundTo 1
             ((diffUTCTime (apcIssueEnd issue) (apcIssueStart issue)) / 3600)
       td $ toHtml $ show duration
@@ -73,7 +73,7 @@ apcIssueForm (Entity aid apc) mIssue categories = H.form ! method "post" $ do
   H.label $ do
     H.span "Start"
     datepicker "start-field" "startday"
-      (formatDay $ either fst apcIssueStart mIssue)
+      (formatDay' $ either fst apcIssueStart mIssue)
     input ! Ha.id "starttime-field"
           ! Ha.name "starttime"
           ! Ha.value (stringValue $ either (\ _ -> "00:00")
@@ -81,8 +81,7 @@ apcIssueForm (Entity aid apc) mIssue categories = H.form ! method "post" $ do
                                            mIssue)
   H.label $ do
     H.span "End"
-    datepicker "end-field" "endday"
-      (formatDay $ either fst apcIssueEnd mIssue)
+    datepicker "end-field" "endday" (formatDay' $ either fst apcIssueEnd mIssue)
     input ! Ha.id "endtime-field"
           ! Ha.name "endtime"
           ! Ha.value (stringValue $ either (\ _ -> "00:00")

@@ -94,36 +94,33 @@ toCalculateBlc pid bid mStart mEnd = do
   case mBlc of
     Nothing  -> lift (left err404)
     Just blc -> do
-      start <- maybe (liftIO $ relativeDay (-1))
-                     (return . localDayToUTC)
-                     mStart
-      end <- maybe (liftIO $ relativeDay 0)
-                   (return . localDayToUTC)
-                   mEnd
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
       return (blcCalculatePage start end blc)
 
 calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
-calculateBlc aid bid (start, end) =
-  let start' = localDayToUTC start
-      end'   = localDayToUTC end
-  in do A.markCalculateASD start' end' aid
-        B.markCalculate start' end' bid
-        redirect (viewBlcLink' aid bid)
-        return undefined
+calculateBlc aid bid (start, end) = do
+  A.markCalculateASD (localDayToUTC start) (localDayToUTC (addDays 1 end)) aid
+  B.markCalculate start end bid
+  redirect (viewBlcLink' aid bid)
+  return undefined
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
-  start <- maybe (liftIO $ relativeDay (-1))
-                 (return . localDayToUTC)
-                 mStart
-  end <- maybe (liftIO $ relativeDay 0)
-               (return . localDayToUTC)
-               mEnd
-  mResult <- getResult start end aid
-  case mResult of
+  mArea <- runDb (selectFirst [AreaId ==. aid] [])
+  case mArea of
     Nothing -> lift (left err404)
-    Just (areaResult, subareaResults, blcResults) -> return $
-      areaBlcPage start end areaResult subareaResults blcResults
+    Just area -> do
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
+      if start > end
+      then return (areaBlcPage start end area (Left negativeDateRangeMsg))
+      else liftM (areaBlcPage start end area . maybe (Left incompleteMsg) Right)
+                 (runDb (getResult start end area))
+  where negativeDateRangeMsg = "Start cannot be later than end."
+        incompleteMsg = "Data for report incomplete (recalculation required)." 
 
 viewBlcBadActors :: Key Area -> Maybe Day -> Maybe Day
                  -> Maybe Double -> Maybe Double
@@ -131,42 +128,39 @@ viewBlcBadActors :: Key Area -> Maybe Day -> Maybe Day
 viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
   mArea <- runDb $ selectFirst [AreaId ==. aid] []
   case mArea of
-    Nothing   -> lift (left err404)
+    Nothing -> lift (left err404)
     Just area -> do
-      start <- maybe (liftIO $ relativeDay (-1))
-                     (return . localDayToUTC)
-                     mStart
-      end <- maybe (liftIO $ relativeDay 0)
-                   (return . localDayToUTC)
-                   mEnd
-      bids <- descendantBlcsOf aid
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
       let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
       let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
-      badComplies <- getBadCompliances start end complianceTarget bids
-      badQualities <- getBadQualities start end qualityTarget bids
-      return (areaBlcBadActorsPage start end area
-              complianceTarget qualityTarget badComplies badQualities)
+      result <- runDb $ do
+        bids <- descendantBlcsOf aid
+        mbc <- getBadCompliances start end complianceTarget bids
+        mbq <- getBadQualities start end qualityTarget bids
+        return (mbc, mbq)
+      case result of
+        (Just badComplies, Just badQualities) -> return $
+          areaBlcBadActorsPage start end area
+            complianceTarget qualityTarget badComplies badQualities
+        _ -> return (areaBlcBadActorsNoDataPage area)
 
 toCalculateAreaBlcs :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 toCalculateAreaBlcs aid mStart mEnd = do
   mArea <- runDb $ selectFirst [AreaId ==. aid] []
   case mArea of
-    Nothing   -> lift (left err404)
+    Nothing -> lift (left err404)
     Just area -> do
-      start <- maybe (liftIO $ relativeDay (-1))
-                     (return . localDayToUTC)
-                     mStart
-      end <- maybe (liftIO $ relativeDay 0)
-                   (return . localDayToUTC)
-                   mEnd
+      yesterday <- liftIO (relativeDay (-1))
+      let start = maybe yesterday id mStart
+      let end = maybe yesterday id mEnd
       return (areaBlcCalculatePage start end area)
 
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
-calculateAreaBlcs aid (start, end) =
-  let start' = localDayToUTC start
-      end'   = localDayToUTC end
-  in do bids <- descendantBlcsOf aid
-        A.markCalculateASD start' end' aid
-        forM_ bids (B.markCalculate start' end')
-        redirect (viewAreaLink' aid)
-        return undefined
+calculateAreaBlcs aid (start, end) = do
+  bids <- runDb (descendantBlcsOf aid)
+  A.markCalculateASD (localDayToUTC start) (localDayToUTC (addDays 1 end)) aid
+  forM_ bids (B.markCalculate start end)
+  redirect (viewAreaLink' aid)
+  return undefined

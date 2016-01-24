@@ -54,7 +54,7 @@ apcsPage apcs = layout "APC list" $ do
     a ! href viewAreasLink $ "here"
     H.span "."
 
-apcCalculatePage :: UTCTime -> UTCTime -> Entity Apc -> Html
+apcCalculatePage :: Day -> Day -> Entity Apc -> Html
 apcCalculatePage start end (Entity aid apc) =
   layout "APC performance calculation" $ do
     h1 $ toHtml (apcName apc)
@@ -68,64 +68,66 @@ apcCalculatePage start end (Entity aid apc) =
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
 
-apcPerformancePage :: Entity Apc -> UTCTime -> UTCTime
+apcPerformancePage :: Entity Apc -> Day -> Day
                    -> [Entity ApcInterval] -> [Entity ApcIssue]
                    -> [Entity Cv] -> [Entity CvInterval]
                    -> Html
 apcPerformancePage (Entity aid apc) start end uptimes issues cvs cvExceeds =
-  layout "Apc performance" $ do
-  h1 $ toHtml (apcName apc)
-  apcNavigation (apcArea apc) aid 3
-  H.form ! class_ "line-form" ! method "get" $ do
-    H.label $ do
-      H.span "Start"
-      datepicker "start-field" "start" (formatDay start)
-    H.label $ do
-      H.span "End"
-      datepicker "end-field" "end" (formatDay end)
-    button "Refresh"
-    a ! href (toCalculateApcLink
-              (apcArea apc) aid (utcToLocalDay start) (utcToLocalDay end))
-      $ "Recalculate"
-  h2 ! Ha.style "text-align:center;" $ "Uptime"
-  H.div ! Ha.id "summary" $ ""
-  timeScale start end
-  H.div ! Ha.id "uptimes" $ ""
-  H.div ! Ha.id "issues" $ ""
-  h2 ! Ha.style "text-align:center;" $ "CV constraints"
-  h3 ! Ha.style "text-align:center;" $ "Economic"
-  timeScale start end
-  H.div ! Ha.id "cv-exceeds-economic" $ ""
-  h3 ! Ha.style "text-align:center;" $ "Constraint"
-  timeScale start end
-  H.div ! Ha.id "cv-exceeds-constraint" $ ""
-  h3 ! Ha.style "text-align:center;" $ "Protective"
-  timeScale start end
-  H.div ! Ha.id "cv-exceeds-protective" $ ""
-  script $ toHtml $ L.unpack $
-    L.concat [ "var start = new Date('", encode start, "');"
-             , "var end = new Date('", encode end, "');"
-             , "var uptimes = ", (encode uptimes), ";"
-             , "var issues = ", (encode issues), ";"
-             , "var cvs = ", (encode cvs), ";"
-             , "var cvExceeds = ", (encode cvExceeds), ";"   ]
-  script ! src "/apc.js" $ ""
-  where timeScale s e =
-          table ! class_ "time-scale" $ tr $
-            forM_ (splitByHours 6 s e) (\ (t, _) -> td $ toHtml $ formatShort t)
-        splitByHours pieces s e =
-          let l = (toUnix s) - mod ((toUnix s) + offset*60) 86400
-              t = mod ((toUnix e) + offset*60) 86400
-              r = (toUnix e) + (if t /= 0 then 86400 - t else 0)
-              pieceSize = Prelude.div (r - l) pieces
-              startTimes = map (\ n -> l + (n-1)*pieceSize) [1..pieces]
-              endTimes = map (\ n -> l + n*pieceSize) [1..pieces]
-          in map (\ (s', e') -> (fromUnix $ fromIntegral s',
-                                 fromUnix $ fromIntegral e' )) $
-             zip startTimes endTimes
-        toUnix t = round $ diffUTCTime t refTime
-        fromUnix t = addUTCTime t refTime
-        TimeZone offset _ _ = tz
+  let start' = localDayToUTC start
+      end' = localDayToUTC (addDays 1 end)
+  in layout "Apc performance" $ do
+    h1 $ toHtml (apcName apc)
+    apcNavigation (apcArea apc) aid 3
+    H.form ! class_ "line-form" ! method "get" $ do
+      H.label $ do
+        H.span "Start"
+        datepicker "start-field" "start" (formatDay start)
+      H.label $ do
+        H.span "End"
+        datepicker "end-field" "end" (formatDay end)
+      button "Refresh"
+      a ! href (toCalculateApcLink (apcArea apc) aid start end)
+        $ "Recalculate"
+    h2 ! Ha.style "text-align:center;" $ "Uptime"
+    H.div ! Ha.id "summary" $ ""
+    timeScale start' end'
+    H.div ! Ha.id "uptimes" $ ""
+    H.div ! Ha.id "issues" $ ""
+    h2 ! Ha.style "text-align:center;" $ "CV constraints"
+    h3 ! Ha.style "text-align:center;" $ "Economic"
+    timeScale start' end'
+    H.div ! Ha.id "cv-exceeds-economic" $ ""
+    h3 ! Ha.style "text-align:center;" $ "Constraint"
+    timeScale start' end'
+    H.div ! Ha.id "cv-exceeds-constraint" $ ""
+    h3 ! Ha.style "text-align:center;" $ "Protective"
+    timeScale start' end'
+    H.div ! Ha.id "cv-exceeds-protective" $ ""
+    script $ toHtml $ L.unpack $
+      L.concat [ "var start = new Date('", encode start', "');"
+               , "var end = new Date('", encode end', "');"
+               , "var uptimes = ", (encode uptimes), ";"
+               , "var issues = ", (encode issues), ";"
+               , "var cvs = ", (encode cvs), ";"
+               , "var cvExceeds = ", (encode cvExceeds), ";"   ]
+    script ! src "/apc.js" $ ""
+    where timeScale s e =
+            table ! class_ "time-scale" $ tr $
+              forM_ (splitByHours 6 s e)
+                    (\ (t, _) -> td $ toHtml $ formatShort t)
+          splitByHours pieces s e =
+            let l = (toUnix s) - mod ((toUnix s) + offset*60) 86400
+                t = mod ((toUnix e) + offset*60) 86400
+                r = (toUnix e) + (if t /= 0 then 86400 - t else 0)
+                pieceSize = Prelude.div (r - l) pieces
+                startTimes = map (\ n -> l + (n-1)*pieceSize) [1..pieces]
+                endTimes = map (\ n -> l + n*pieceSize) [1..pieces]
+            in map (\ (s', e') -> (fromUnix $ fromIntegral s',
+                                   fromUnix $ fromIntegral e' )) $
+               zip startTimes endTimes
+          toUnix t = round $ diffUTCTime t refTime
+          fromUnix t = addUTCTime t refTime
+          TimeZone offset _ _ = tz
 
 apcNavigation :: Key Area -> Key Apc -> Int -> Html
 apcNavigation aid apcId = navigation

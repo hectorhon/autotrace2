@@ -32,7 +32,7 @@ apcIssueSite = toCreateApcIssue
 toCreateApcIssue :: Key Area -> Key Apc -> AppM Html
 toCreateApcIssue aid apcId = do
   mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
-  day <- liftIO $ relativeDay (-1)
+  day <- liftIO $ relativeDay' (-1)
   categories <- runDb $
                 E.select $ E.distinct $ E.from $
                 \ c -> return (c E.^. ApcIssueCategory)

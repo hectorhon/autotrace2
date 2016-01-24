@@ -17,7 +17,7 @@ uploadBlockConfigPage uploadDate = layout "Upload block config file" $ do
   H.form ! method "post" ! enctype "multipart/form-data" $ do
     H.label $ do
       H.span "Snapshot date"
-      datepicker "date-field" "snapshotdate" (formatDay uploadDate)
+      datepicker "date-field" "snapshotdate" (formatDay' uploadDate)
     field "Group" "group" (\ _ -> "" :: String) Nothing
     input ! Ha.name "blockconfig" ! type_ "file"
     button "Save"
@@ -44,15 +44,15 @@ searchBlocksPage mSearchStr blocks = layout "Search blocks" $ do
           tr $ do
             td $ a ! href (viewBlockLink bid) $ toHtml blockName
             td $ toHtml t
-            td $ toHtml $ formatDay date
+            td $ toHtml $ formatDay' date
             td $ toHtml group
 
 viewBlockPage :: BlockHead -> [Entity BlockAttr] -> Html
 viewBlockPage block attrs = layout "Block detail" $ do
   h1 (toHtml $ blockHeadName block)
-  p (toHtml $ "Registered on: " ++ (formatDay $ blockHeadFirstDate block))
+  p (toHtml $ "Registered on: " ++ (formatDay' $ blockHeadFirstDate block))
   p (toHtml $ "Last local database update: "
-              ++ (formatDay $ blockHeadCurrentDate block))
+              ++ (formatDay' $ blockHeadCurrentDate block))
   p (toHtml $ "Group: " ++ (blockHeadGroup block))
   table ! class_ "list-table" $ do
     tr $ th "Parameter" >> th "Value"

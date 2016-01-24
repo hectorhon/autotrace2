@@ -8,7 +8,7 @@ changesIn points intervals = changesIn' Nothing points intervals
 
 changesIn' :: Maybe TSValue -> [TSPoint] -> [TSInterval] -> [NominalDiffTime]
 changesIn' previous (point:points) (interval:intervals) =
-  if fst interval < timeOf point && timeOf point <= snd interval
+  if fst interval <= timeOf point && timeOf point <= snd interval
   then let rm = changesIn' (Just $ valueOf point) points (interval:intervals) in
        case previous of Nothing -> rm
                         Just v  -> if v == valueOf point then rm

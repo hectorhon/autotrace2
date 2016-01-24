@@ -29,7 +29,7 @@ blockSite = toUploadBlockConfig
        :<|> viewBlock
 
 toUploadBlockConfig :: AppM Html
-toUploadBlockConfig = (liftIO $ relativeDay (-1))
+toUploadBlockConfig = (liftIO $ relativeDay' (-1))
   >>= return . uploadBlockConfigPage
 
 uploadBlockConfig :: MultiPartData Mem -> AppM Text

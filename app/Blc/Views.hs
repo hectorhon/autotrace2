@@ -35,7 +35,7 @@ blcEditPage (Entity bid blc) parent = layout (blcName blc) $ do
   h2 "Definition - edit"
   blcForm parent (Just blc)
 
-blcCalculatePage :: UTCTime -> UTCTime -> Entity Blc -> Html
+blcCalculatePage :: Day -> Day -> Entity Blc -> Html
 blcCalculatePage start end (Entity bid blc) =
   layout "Single controller calculation" $ do
     h1 $ toHtml (blcName blc)
@@ -49,7 +49,7 @@ blcCalculatePage start end (Entity bid blc) =
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
 
-areaBlcCalculatePage :: UTCTime -> UTCTime -> Entity Area -> Html
+areaBlcCalculatePage :: Day -> Day -> Entity Area -> Html
 areaBlcCalculatePage start end (Entity aid area) =
   layout "Calculate controllers by area" $ do
     h1 $ toHtml (areaName area)
@@ -67,7 +67,14 @@ areaBlcCalculatePage start end (Entity aid area) =
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
 
-areaBlcBadActorsPage :: UTCTime -> UTCTime -> Entity Area -> Double -> Double
+areaBlcBadActorsNoDataPage :: Entity Area -> Html
+areaBlcBadActorsNoDataPage (Entity aid area) =
+  layout "Bad actors" $ do
+    h1 $ toHtml (areaName area)
+    areaNavigation aid 2
+    p "Data for report incomplete (recalculation required)."
+
+areaBlcBadActorsPage :: Day -> Day -> Entity Area -> Double -> Double
                      -> [(Entity Blc, Double)] -> [(Entity Blc, Double)]
                      -> Html
 areaBlcBadActorsPage start end (Entity aid area)
@@ -112,11 +119,10 @@ areaBlcBadActorsPage start end (Entity aid area)
                  td $ toHtml (blcDescription blc)
                  td $ toHtml (show $ (roundTo 1 $ quality * 100)))
 
-areaBlcPage :: UTCTime -> UTCTime -> AreaResult -> [AreaResult] -> [BlcResult]
+areaBlcPage :: Day -> Day -> Entity Area
+            -> Either String (AreaResult, [AreaResult], [BlcResult])
             -> Html
-areaBlcPage start end
-            areaResult@(AreaResult (Entity aid area) _ _ _ _ _ _ _ _)
-            subareaResults blcResults =
+areaBlcPage start end (Entity aid area) eResults =
   layout "Controller performance" $ do
     h1 (toHtml $ areaName area)
     areaNavigation aid 2
@@ -128,29 +134,29 @@ areaBlcPage start end
         H.span "End"
         datepicker "end-field" "end" (formatDay end)
       button "Refresh"
-      a ! href (toCalculateAreaBlcsLink
-                aid (utcToLocalDay start) (utcToLocalDay end)) $ "Recalculate"
-    h2 "Summary"
-    byAreasBlcResultTable start end [areaResult] 
-    p $ do
-      a ! href (viewBlcBadActorsLink
-                aid (utcToLocalDay start) (utcToLocalDay end) 95 95)
-        $ "View all bad actors"
-      case areaParent area of
-        Nothing -> return ()
-        Just parent -> do
-          H.span " "
-          a ! href (viewBlcsPerformanceLink parent
-                    (utcToLocalDay start) (utcToLocalDay end))
-            $ "Up one level"
-    when (not $ null subareaResults) $ do
-      h2 "Subareas"
-      byAreasBlcResultTable start end subareaResults
-    when (not $ null blcResults) $ do
-      h2 "Controllers"
-      blcsResultTable blcResults
+      a ! href (toCalculateAreaBlcsLink aid start end) $ "Recalculate"
+    case eResults of
+      Left errMsg -> p (toHtml errMsg)
+      Right (areaResult, subareaResults, blcResults) -> do
+        h2 "Summary"
+        byAreasBlcResultTable start end [areaResult] 
+        p $ do
+          a ! href (viewBlcBadActorsLink aid start start 95 95)
+            $ "View all bad actors"
+          case areaParent area of
+            Nothing -> return ()
+            Just parent -> do
+              H.span " "
+              a ! href (viewBlcsPerformanceLink parent start end)
+                $ "Up one level"
+        when (not $ null subareaResults) $ do
+          h2 "Subareas"
+          byAreasBlcResultTable start end subareaResults
+        when (not $ null blcResults) $ do
+          h2 "Controllers"
+          blcsResultTable blcResults
 
-byAreasBlcResultTable :: UTCTime -> UTCTime -> [AreaResult] -> Html
+byAreasBlcResultTable :: Day -> Day -> [AreaResult] -> Html
 byAreasBlcResultTable start end results = table ! class_ "result-table" $ do
   col ! class_ "result-table-col-1"
   col ! class_ "result-table-col-2"
@@ -173,8 +179,7 @@ byAreasBlcResultTable start end results = table ! class_ "result-table" $ do
     (\ (AreaResult (Entity aid area) compliance quality blcCount
        modeIntervCount mvIntervCount spIntervCount mvSat cvAffBySat) ->
       tr $ do
-        td $ a ! href (viewBlcsPerformanceLink
-                       aid (utcToLocalDay start) (utcToLocalDay end))
+        td $ a ! href (viewBlcsPerformanceLink aid start end)
                $ toHtml (areaName area)
         td $ bar "lightgreen" compliance blcCount (compliance `over` blcCount)
         td $ bar "lightblue" quality blcCount (quality `over` blcCount)
