@@ -6,6 +6,7 @@ import Text.Blaze.Html5 as H hiding (area, q)
 import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
 import Data.List (sortOn)
+import Data.Maybe (isJust)
 import Control.Monad (forM_, when)
 import Common.Views
 import Area.Types
@@ -279,3 +280,48 @@ blcDD blc (Entity pid parent) = table ! class_ "definition-table" $ do
   tr $ th "Compliance margin" >> td (toHtml $ blcMargin blc)
   tr $ th "Calc. MV interv. when" >> td (toHtml $ blcCalcMvICond blc)
   tr $ th "Calc. SP interv. when" >> td (toHtml $ blcCalcSpICond blc)
+
+blcLabelNewPage :: Html
+blcLabelNewPage = layout "New label for controller" $ do
+  h1 "New label for controller"
+  blcLabelForm Nothing
+
+blcLabelPage :: Entity BlcLabel -> Html
+blcLabelPage (Entity lid blcLabel) = layout "View controller label" $ do
+  h1 (toHtml $ "Controller label \"" ++ blcLabelName blcLabel ++ "\"")
+  editableH2 "Definition" (toEditBlcLabelLink lid)
+  blcLabelDD blcLabel
+
+blcLabelsPage :: [Entity BlcLabel] -> Html
+blcLabelsPage blcLabels = layout "View controller labels" $ do
+  h1 "Controller labels"
+  ul $ forM_ blcLabels (\ (Entity lid blcLabel) -> li $
+    a ! href (viewBlcLabelLink lid) $ toHtml (blcLabelName blcLabel))
+
+blcLabelEditPage :: BlcLabel -> Html
+blcLabelEditPage blcLabel = layout "Edit controller label" $ do
+  h1 (toHtml $ "Edit controller label \"" ++ blcLabelName blcLabel ++ "\"")
+  blcLabelForm (Just blcLabel)
+
+blcLabelForm :: Maybe BlcLabel -> Html
+blcLabelForm mBlcLabel = H.form ! method "post" $ do
+  field "Name"         "name"        blcLabelName        mBlcLabel
+  field "Description"  "description" blcLabelDescription mBlcLabel
+  selectField "Colour" "colour"      blcLabelColour      mBlcLabel
+    [ ("#FF0000", "Red")
+    , ("#00FF00", "Green")
+    , ("#0000FF", "Blue")
+    ]
+  button "Save"
+  when (isJust mBlcLabel)
+       (deleteButton "blclabel-delete-button" viewBlcLabelsLink')
+  cancelButton "blclabel-cancel-button"
+
+blcLabelDD :: BlcLabel -> Html
+blcLabelDD blcLabel = table ! class_ "definition-table" $ do
+  tr $ th "Name" >> td (toHtml $ blcLabelName blcLabel)
+  tr $ th "Description" >> td (toHtml $ blcLabelDescription blcLabel)
+  tr $ do
+    th "Colour"
+    let colour = blcLabelColour blcLabel
+    td ! Ha.style (stringValue $ "color:"++colour++";") $ toHtml colour

@@ -35,12 +35,23 @@ blcSite = toCreateBlc
      :<|> toEditBlc
      :<|> editBlc
      :<|> deleteBlc
+
      :<|> toCalculateBlc
      :<|> calculateBlc
      :<|> viewBlcsPerformance
      :<|> viewBlcBadActors
      :<|> toCalculateAreaBlcs
      :<|> calculateAreaBlcs
+
+     :<|> toCreateBlcLabel
+     :<|> createBlcLabel
+     :<|> viewBlcLabel
+     :<|> viewBlcLabels
+     :<|> toEditBlcLabel
+     :<|> editBlcLabel
+     :<|> deleteBlcLabel
+     :<|> labelBlc
+     :<|> unlabelBlc
 
 toCreateBlc :: Key Area -> AppM Html
 toCreateBlc aid = do
@@ -164,3 +175,39 @@ calculateAreaBlcs aid (start, end) = do
   forM_ bids (B.markCalculate start end)
   redirect (viewAreaLink' aid)
   return undefined
+
+toCreateBlcLabel :: AppM Html
+toCreateBlcLabel = return blcLabelNewPage
+
+createBlcLabel :: BlcLabel -> AppM Text
+createBlcLabel blcLabel = do
+  lid <- runDb (insert blcLabel)
+  redirect (viewBlcLabelLink' lid)
+  return undefined
+
+viewBlcLabel :: Key BlcLabel -> AppM Html
+viewBlcLabel lid = runDb (get lid)
+  >>= maybe (lift $ left err404) (return . blcLabelPage) . fmap (Entity lid)
+
+viewBlcLabels :: AppM Html
+viewBlcLabels = runDb (selectList [] [Asc BlcLabelName])
+                >>= return . blcLabelsPage
+
+toEditBlcLabel :: Key BlcLabel -> AppM Html
+toEditBlcLabel lid = runDb (get lid)
+                     >>= maybe (lift $ left err404) (return . blcLabelEditPage)
+
+editBlcLabel :: Key BlcLabel -> BlcLabel -> AppM Text
+editBlcLabel lid blcLabel = do
+  runDb (replace lid blcLabel)
+  redirect (viewBlcLabelLink' lid)
+  return undefined
+
+deleteBlcLabel :: Key BlcLabel -> AppM Text
+deleteBlcLabel lid = do
+  runDb $ deleteCascadeWhere [BlcLabelId ==. lid]
+  redirect viewBlcLabelsLink'
+  return undefined
+
+labelBlc = undefined
+unlabelBlc = undefined

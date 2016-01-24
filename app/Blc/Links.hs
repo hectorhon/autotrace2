@@ -63,3 +63,25 @@ viewBlcBadActorsLink aid start end complianceTargetPct qualityTargetPct =
 toCalculateAreaBlcsLink :: Key Area -> Day -> Day -> AttributeValue
 toCalculateAreaBlcsLink aid start end = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ToCalculateAreaBlcs) aid start end)
+
+
+
+viewBlcLabelLink' :: Key BlcLabel -> String
+viewBlcLabelLink' lid = "/" ++ show (linkTo (Proxy :: Proxy ViewBlcLabel) lid)
+
+viewBlcLabelLink :: Key BlcLabel -> AttributeValue
+viewBlcLabelLink = stringValue . viewBlcLabelLink'
+
+
+
+viewBlcLabelsLink' :: String
+viewBlcLabelsLink' = "/" ++ show (linkTo (Proxy :: Proxy ViewBlcLabels))
+
+viewBlcLabelsLink :: AttributeValue
+viewBlcLabelsLink = stringValue viewBlcLabelsLink'
+
+
+
+toEditBlcLabelLink :: Key BlcLabel -> AttributeValue
+toEditBlcLabelLink lid = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToEditBlcLabel) lid)

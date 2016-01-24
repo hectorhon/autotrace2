@@ -19,12 +19,23 @@ type BlcSite = ToCreateBlc
           :<|> ToEditBlc
           :<|> EditBlc
           :<|> DeleteBlc
+
           :<|> ToCalculateBlc
           :<|> CalculateBlc
           :<|> ViewBlcsPerformance
           :<|> ViewBlcBadActors
           :<|> ToCalculateAreaBlcs
           :<|> CalculateAreaBlcs
+
+          :<|> ToCreateBlcLabel
+          :<|> CreateBlcLabel
+          :<|> ViewBlcLabel
+          :<|> ViewBlcLabels
+          :<|> ToEditBlcLabel
+          :<|> EditBlcLabel
+          :<|> DeleteBlcLabel
+          :<|> LabelBlc
+          :<|> UnlabelBlc
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
                    :> RequireAuth WriteRole'
@@ -99,3 +110,40 @@ type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                          :> ReqBody '[FormUrlEncoded] (Day, Day)
                          :> RequireAuth WriteRole'
                          :> Post '[PlainText] Text
+
+type ToCreateBlcLabel = "blc" :> "label" :> "new"
+                        :> RequireAuth WriteRole'
+                        :> Get '[HTML] Html
+
+type CreateBlcLabel = "blc" :> "label" :> "new"
+                      :> ReqBody '[FormUrlEncoded] BlcLabel
+                      :> RequireAuth WriteRole'
+                      :> Post '[PlainText] Text
+
+type ViewBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel)
+                    :> Get '[HTML] Html
+
+type ViewBlcLabels = "blc" :> "label" :> Get '[HTML] Html
+
+type ToEditBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel) :> "edit"
+                      :> RequireAuth WriteRole'
+                      :> Get '[HTML] Html
+
+type EditBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel) :> "edit"
+                    :> ReqBody '[FormUrlEncoded] BlcLabel
+                    :> RequireAuth WriteRole'
+                    :> Post '[PlainText] Text
+
+type DeleteBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel)
+                      :> RequireAuth WriteRole'
+                      :> Delete '[PlainText] Text
+
+type LabelBlc = "blc" :> Capture "bid" (Key Blc) :> "label"
+                :> ReqBody '[PlainText] Text
+                :> RequireAuth WriteRole'
+                :> Put '[PlainText] Text
+
+type UnlabelBlc = "blc" :> Capture "bid" (Key Blc)
+                  :> "label" :> Capture "label" String
+                  :> RequireAuth WriteRole'
+                  :> Delete '[PlainText] Text

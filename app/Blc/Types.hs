@@ -54,6 +54,13 @@ share [ mkPersist sqlSettings,
       spInterv      Int
       mvSat         Double
       cvAffBySat    Double
+    BlcLabel
+      name          String
+      description   String
+      colour        String
+    BlcToLabel
+      blc           BlcId
+      label         BlcLabelId
   |]
 
 instance FromFormUrlEncoded Blc where
@@ -109,3 +116,16 @@ instance FromFormUrlEncoded Blc where
                          (lookup "calcspicond" params)
     return $ Blc name description area measTag sptTag outTag outMax outMin
                  demandCond uptimeCond objective margin calcMvICond calcSpICond
+
+instance FromFormUrlEncoded BlcLabel where
+  fromFormUrlEncoded params = runExcept $ do
+    name        <- maybe (throwError "Missing name")
+                         (return . unpack)
+                         (lookup "name" params)
+    description <- maybe (throwError "Missing description")
+                         (return . unpack)
+                         (lookup "description" params)
+    colour      <- maybe (throwError "Missing colour")
+                         (return . unpack)
+                         (lookup "colour" params)
+    return (BlcLabel name description colour)
