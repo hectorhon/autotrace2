@@ -3,7 +3,7 @@
 module Area.Views where
 
 import Text.Blaze.Html5 as H hiding (area, link)
-import Text.Blaze.Html5.Attributes as Ha
+import Text.Blaze.Html5.Attributes as Ha hiding (target)
 import Database.Persist.Postgresql
 import Control.Monad
 import Data.Maybe
@@ -89,5 +89,7 @@ areaDD area mParent = table ! class_ "definition-table" $ do
   tr $ th "Description" >> td (toHtml $ areaDescription area)
   case mParent of
     Nothing -> return ()
-    Just (Entity _ parent) -> tr $ th "Parent" >> td (toHtml $ areaName parent)
+    Just (Entity pid parent) -> tr $ do
+      th "Parent"
+      td (a ! href (viewAreaLink pid) $ (toHtml (areaName parent)))
   tr $ th "Demand condition" >> td (toHtml $ areaDemandCond area)
