@@ -11,8 +11,8 @@ import qualified Database.Esqueleto as E
 import Control.Monad.Trans.Either
 import Control.Monad.Except
 import Data.Text (Text)
-import Data.ByteString.Char8 (unpack, pack)
-import qualified Data.ByteString.Lazy.Char8 as LBS (unpack, pack)
+import Data.ByteString.Char8 (unpack)
+import qualified Data.ByteString.Lazy.Char8 as LBS (pack)
 import AppM
 import Time
 import Schema
@@ -42,20 +42,17 @@ uploadBlockConfig (params, files) = runExceptT (do
                         (lookup "snapshotdate" params
                          >>= return . unpack >>= parseDay)
   when (null files) (throwError "No file selected")
-  case (parseBlocks $ pack $ LBS.unpack $ fileContent $ snd $ head files) of
+  case (parseBlocks $ fileContent $ snd $ head files) of
     Left errMsg -> throwError (LBS.pack $ "Parse error: " ++ errMsg)
-    Right blocks -> forM blocks $ \ (Block name type_ attrs) -> do
-      mBlockHead <- runDb $ getBy (NameTypeGroup name type_ group)
+    Right blocks -> runDb $ forM blocks $ \ (Block name type_ attrs) -> do
+      mBlockHead <- getBy (NameTypeGroup name type_ group)
       case mBlockHead of
         Nothing -> do
-          bhid <- runDb $ insert $
-                  BlockHead name type_ snapshotDate snapshotDate group
-          runDb $ insertMany_ $
-            map (uncurry $ BlockAttr bhid snapshotDate) attrs
+          bhid <- insert $ BlockHead name type_ snapshotDate snapshotDate group
+          insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs
         Just (Entity bhid _) -> do
-          runDb $ update bhid [BlockHeadCurrentDate =. snapshotDate]
-          runDb $ insertMany_ $
-            map (uncurry $ BlockAttr bhid snapshotDate) attrs)
+          update bhid [BlockHeadCurrentDate =. snapshotDate]
+          insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs)
   >>= either (\ errMsg -> lift $ left $ err400 { errBody = errMsg })
              (\ _ -> redirect "/" >> return undefined)
 

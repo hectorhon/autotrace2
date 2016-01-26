@@ -5,14 +5,16 @@ module Block.Parse
   , parseBlocks
   ) where
 
-import Data.Attoparsec.ByteString as A (takeTill)
-import Data.Attoparsec.ByteString.Char8
+import Data.Attoparsec.ByteString (takeTill)
+import Data.Attoparsec.ByteString.Char8 hiding (takeTill, parse, eitherResult)
+import Data.Attoparsec.ByteString.Lazy (parse, eitherResult)
+import qualified Data.ByteString.Lazy as L (ByteString)
 import Data.ByteString.Char8 (ByteString, unpack)
 
 data Block = Block String String [(String, String)] deriving Show
 
-parseBlocks :: ByteString -> Either String [Block]
-parseBlocks str = parseOnly ((many' parseBlock) <* endOfInput) str
+parseBlocks :: L.ByteString -> Either String [Block]
+parseBlocks = eitherResult . parse ((many' parseBlock) <* endOfInput)
 
 parseBlock :: Parser Block
 parseBlock = do
@@ -25,11 +27,11 @@ parseBlock = do
 
 parseAttr :: Parser (ByteString, ByteString)
 parseAttr = do
-  key   <- skipSpace *> A.takeTill isHorizontalSpace <* skipSpace
+  key   <- skipSpace *> takeTill isHorizontalSpace <* skipSpace
   _     <- char '='
-  value <- skipSpace *> A.takeTill isEndOfLine <* endOfLine
+  value <- skipSpace *> takeTill isEndOfLine <* endOfLine
   return (key, value)
 
 parseAttrWithKey :: ByteString -> Parser ByteString
 parseAttrWithKey key = skipSpace *> string key *> skipSpace *> char '='
-                    *> skipSpace *> A.takeTill isEndOfLine <* endOfLine
+                    *> skipSpace *> takeTill isEndOfLine <* endOfLine
