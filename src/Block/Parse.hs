@@ -5,9 +5,9 @@ module Block.Parse
   , parseBlocks
   ) where
 
+import Data.Attoparsec.ByteString as A (takeTill)
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString.Char8 (ByteString)
-import Control.Applicative ((<|>))
+import Data.ByteString.Char8 (ByteString, unpack)
 
 data Block = Block String String [(String, String)] deriving Show
 
@@ -20,23 +20,16 @@ parseBlock = do
   type_       <- parseAttrWithKey "TYPE"
   attrs       <- manyTill parseAttr (string "END")
   _           <- endOfLine
-  return (Block name type_ attrs)
+  return (Block (unpack name) (unpack type_)
+                (map (\ (a, b) -> (unpack a, unpack b)) attrs))
 
-parseAttr :: Parser (String, String)
+parseAttr :: Parser (ByteString, ByteString)
 parseAttr = do
-  _     <- delim
-  key   <- manyTill anyChar (char ' ' <|> char '\t')
-  _     <- delim >> char '=' >> delim
-  value <- manyTill anyChar endOfLine
+  key   <- skipSpace *> A.takeTill isHorizontalSpace <* skipSpace
+  _     <- char '='
+  value <- skipSpace *> A.takeTill isEndOfLine <* endOfLine
   return (key, value)
 
-parseAttrWithKey :: ByteString -> Parser String
-parseAttrWithKey key = do
-  _     <- delim
-  _     <- string key
-  _     <- delim >> char '=' >> delim
-  value <- manyTill anyChar endOfLine
-  return value
-
-delim :: Parser String
-delim = many' (char ' ' <|> char '\t')
+parseAttrWithKey :: ByteString -> Parser ByteString
+parseAttrWithKey key = skipSpace *> string key *> skipSpace *> char '='
+                    *> skipSpace *> A.takeTill isEndOfLine <* endOfLine
