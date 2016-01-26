@@ -23,7 +23,8 @@ type UploadBlockConfig = "block" :> "upload"
                          :> Post '[PlainText] Text
 
 type SearchBlock = "block" :> "search"
-                :> QueryParam "pname" String
+                :> QueryParam "name" String
+                :> QueryParam "type" String
                 :> Get '[HTML] Html
 
 type ViewBlock = "block" :> Capture "bid" (Key BlockHead)

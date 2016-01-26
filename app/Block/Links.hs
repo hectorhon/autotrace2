@@ -12,3 +12,7 @@ import Schema
 viewBlockLink :: Key BlockHead -> AttributeValue
 viewBlockLink bid = stringValue $
   "/" ++ show (linkTo (Proxy :: Proxy ViewBlock) bid)
+
+searchBlockLink :: String -> String -> AttributeValue
+searchBlockLink name type_ = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy SearchBlock) name type_)

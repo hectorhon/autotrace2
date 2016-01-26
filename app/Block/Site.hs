@@ -5,9 +5,8 @@
 module Block.Site where
 
 import Servant
-import Text.Blaze.Html5 hiding (head, map, i)
-import Database.Persist.Postgresql
-import qualified Database.Esqueleto as E
+import Text.Blaze.Html5 hiding (head, map, i, select)
+import Database.Esqueleto
 import Control.Monad.Trans.Either
 import Control.Monad.Except
 import Data.Text (Text)
@@ -51,19 +50,21 @@ uploadBlockConfig (params, files) = runExceptT (do
           bhid <- insert $ BlockHead name type_ snapshotDate snapshotDate group
           insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs
         Just (Entity bhid _) -> do
-          update bhid [BlockHeadCurrentDate =. snapshotDate]
+          update $ \i -> where_ (i ^. BlockHeadCurrentDate ==. val snapshotDate)
           insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs)
   >>= either (\ errMsg -> lift $ left $ err400 { errBody = errMsg })
              (\ _ -> redirect "/" >> return undefined)
 
-searchBlocks :: Maybe String -> AppM Html
-searchBlocks Nothing = return $ searchBlocksPage Nothing []
-searchBlocks (Just searchStr) = do
-  blocks <- runDb $ E.select $ E.from $ \ i -> do
-              E.where_ (i E.^. BlockHeadName `E.ilike`
-                        ((E.%) E.++. E.val searchStr E.++. (E.%)))
-              return i
-  return $ searchBlocksPage (Just searchStr) blocks
+searchBlocks :: Maybe String -> Maybe String -> AppM Html
+searchBlocks mName mType = do
+  blocks <- case (mName, mType) of
+    (Nothing, Nothing) -> return []
+    _ -> let f = maybe "" id in runDb $ select $ from $ \ i -> do
+      where_ (    (i ^. BlockHeadName  `ilike` ((%) ++. val (f mName) ++. (%)))
+              &&. (i ^. BlockHeadType_ `ilike` ((%) ++. val (f mType) ++. (%))))
+      orderBy [ asc (i ^. BlockHeadName) ]
+      return i
+  return (searchBlocksPage mName mType blocks)
 
 viewBlock :: Key BlockHead -> AppM Html
 viewBlock bid = do
@@ -71,6 +72,8 @@ viewBlock bid = do
   case mBlockHead of
     Nothing -> lift (left err404)
     Just blockHead -> do
-      blockAttrs <- runDb $ selectList [BlockAttrBlock ==. bid]
-                                       [Asc BlockAttrKey]
-      return $ viewBlockPage blockHead blockAttrs
+      blockAttrs <- runDb $ select $ from $ \ i -> do
+        where_ (i ^. BlockAttrBlock ==. val bid)
+        orderBy [ asc (i ^. BlockAttrKey) ]
+        return i
+      return (viewBlockPage blockHead blockAttrs)

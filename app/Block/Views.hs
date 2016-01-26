@@ -23,26 +23,35 @@ uploadBlockConfigPage uploadDate = layout "Upload block config file" $ do
     button "Save"
     cancelButton "upload-block-config-cancel-button"
 
-searchBlocksPage :: Maybe String -> [Entity BlockHead] -> Html
-searchBlocksPage mSearchStr blocks = layout "Search blocks" $ do
+searchBlocksPage :: Maybe String -> Maybe String -> [Entity BlockHead] -> Html
+searchBlocksPage mName mType blocks = layout "Search blocks" $ do
   h1 "Search for blocks"
   H.form $ do
-    field "Name" "pname" Prelude.id mSearchStr
+    field "Name" "name" Prelude.id mName
+    field "Type" "type" Prelude.id mType
     button "Search"
-  case mSearchStr of
-    Nothing -> return ()
-    Just searchStr -> do
+  case (mName, mType) of
+    (Nothing, Nothing) -> return ()
+    _ -> do
       h2 "Search results"
-      if null blocks then p (toHtml $ "No blocks found for text " ++ searchStr)
+      if null blocks then p "No blocks found."
       else table ! class_ "list-table" $ do
         tr $ do
+          th "Collection"
           th "Name"
           th "Type"
           th "Last local database update"
           th "Group"
         forM_ blocks $ \ (Entity bid (BlockHead blockName t _ date group)) ->
           tr $ do
-            td $ a ! href (viewBlockLink bid) $ toHtml blockName
+            let (collection, name') = break (== ':') blockName
+            if null name'
+            then do
+              td $ a ! href (viewBlockLink bid) $ toHtml collection
+              td $ ""
+            else do
+              td $ a ! href (searchBlockLink collection "") $ toHtml collection
+              td $ a ! href (viewBlockLink bid) $ toHtml $ tail name'
             td $ toHtml t
             td $ toHtml $ formatDay' date
             td $ toHtml group
