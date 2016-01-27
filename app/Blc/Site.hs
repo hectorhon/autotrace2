@@ -128,10 +128,9 @@ viewBlcsPerformance aid mStart mEnd = do
       let end = maybe yesterday id mEnd
       if start > end
       then return (areaBlcPage start end area (Left negativeDateRangeMsg))
-      else liftM (areaBlcPage start end area . maybe (Left incompleteMsg) Right)
+      else liftM (areaBlcPage start end area . Right)
                  (runDb (getResult start end area))
   where negativeDateRangeMsg = "Start cannot be later than end."
-        incompleteMsg = "Data for report incomplete (recalculation required)." 
 
 viewBlcBadActors :: Key Area -> Maybe Day -> Maybe Day
                  -> Maybe Double -> Maybe Double
@@ -140,22 +139,17 @@ viewBlcBadActors aid mStart mEnd mComplianceTargetPct mQualityTargetPct = do
   mArea <- runDb $ selectFirst [AreaId ==. aid] []
   case mArea of
     Nothing -> lift (left err404)
-    Just area -> do
+    Just area -> runDb $ do
       yesterday <- liftIO (relativeDay (-1))
       let start = maybe yesterday id mStart
       let end = maybe yesterday id mEnd
       let complianceTarget = maybe 0.95 (flip (/) 100) mComplianceTargetPct
       let qualityTarget = maybe 0.95 (flip (/) 100) mQualityTargetPct
-      result <- runDb $ do
-        bids <- descendantBlcsOf aid
-        mbc <- getBadCompliances start end complianceTarget bids
-        mbq <- getBadQualities start end qualityTarget bids
-        return (mbc, mbq)
-      case result of
-        (Just badComplies, Just badQualities) -> return $
-          areaBlcBadActorsPage start end area
-            complianceTarget qualityTarget badComplies badQualities
-        _ -> return (areaBlcBadActorsNoDataPage area)
+      bids <- descendantBlcsOf aid
+      badComplies <- getBadCompliances start end complianceTarget bids
+      badQualities <- getBadQualities start end qualityTarget bids
+      return (areaBlcBadActorsPage start end area
+              complianceTarget qualityTarget badComplies badQualities)
 
 toCalculateAreaBlcs :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 toCalculateAreaBlcs aid mStart mEnd = do

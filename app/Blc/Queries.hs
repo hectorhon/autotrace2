@@ -50,77 +50,60 @@ descendantBlcsOf area = rawSql
   >>= return . map (toSqlKey . unSingle)
 
 getBadCompliances :: Day -> Day -> Double -> [Key Blc]
-                  -> SqlPersistT IO (Maybe [(Entity Blc, Double)])
+                  -> SqlPersistT IO [(Entity Blc, Double)]
 getBadCompliances start end complianceTarget bids = do
-  complete <- fmap (unValue . head) $ select $ from $ \ i -> do
+  results <- select $ from $ \ i -> do
     criteria i bids start end
-    let expectedRowCount = fromIntegral (diffDays end start + 1) * length bids
-    return (countRows ==. val expectedRowCount)
-  if not complete then return Nothing else do
-    results <- select $ from $ \ i -> do
-      criteria i bids start end
-      let uptimeDemand = coalesceDefault
-                         [sum_ (i ^. BlcResultDataUptimeDemand)] (val 0)
-      let demand = coalesceDefault [sum_ (i ^. BlcResultDataDemand)] (val 1)
-      let compliance = case_ [ when_ (demand ==. val 0) then_ (val 1) ] $
-                       else_ (uptimeDemand /. demand)
-      having (compliance <. val complianceTarget)
-      groupBy (i ^. BlcResultDataBlc)
-      orderBy [ asc (i ^. BlcResultDataBlc) ]
-      return (i ^. BlcResultDataBlc, compliance)
-    let bids' = map (unValue . fst) results
-    let compliances = map (unValue . snd) results
-    blcs <- select $ from $ \ b -> do
-      where_ (b ^. BlcId `in_` (valList bids'))
-      orderBy [ asc (b ^. BlcId) ]
-      return b
-    return $ Just $ sortOn snd (zip blcs compliances)
+    let uptimeDemand = coalesceDefault
+                       [sum_ (i ^. BlcResultDataUptimeDemand)] (val 0)
+    let demand = coalesceDefault [sum_ (i ^. BlcResultDataDemand)] (val 1)
+    let compliance = case_ [ when_ (demand ==. val 0) then_ (val 1) ] $
+                     else_ (uptimeDemand /. demand)
+    having (compliance <. val complianceTarget)
+    groupBy (i ^. BlcResultDataBlc)
+    orderBy [ asc (i ^. BlcResultDataBlc) ]
+    return (i ^. BlcResultDataBlc, compliance)
+  let bids' = map (unValue . fst) results
+  let compliances = map (unValue . snd) results
+  blcs <- select $ from $ \ b -> do
+    where_ (b ^. BlcId `in_` (valList bids'))
+    orderBy [ asc (b ^. BlcId) ]
+    return b
+  return $ sortOn snd (zip blcs compliances)
 
 getBadQualities :: Day -> Day -> Double -> [Key Blc]
-                -> SqlPersistT IO (Maybe [(Entity Blc, Double)])
+                -> SqlPersistT IO [(Entity Blc, Double)]
 getBadQualities start end qualityTarget bids = do
-  complete <- fmap (unValue . head) $ select $ from $ \ i -> do
+  results <- select $ from $ \ i -> do
     criteria i bids start end
-    let expectedRowCount = fromIntegral (diffDays end start + 1) * length bids
-    return (countRows ==. val expectedRowCount)
-  if not complete then return Nothing else do
-    results <- select $ from $ \ i -> do
-      criteria i bids start end
-      let performUptime = coalesceDefault
-                          [sum_ (i ^. BlcResultDataPerformUptime)] (val 0)
-      let uptime = coalesceDefault [sum_ (i ^. BlcResultDataUptime)] (val 1)
-      let quality = case_ [ when_ (uptime ==. val 0) then_ (val 1) ] $
-                    else_ (performUptime /. uptime)
-      having (quality <. val qualityTarget)
-      groupBy (i ^. BlcResultDataBlc)
-      orderBy [ asc (i ^. BlcResultDataBlc) ]
-      return (i ^. BlcResultDataBlc, quality)
-    let bids' = map (unValue . fst) results
-    let qualities = map (unValue . snd) results
-    blcs <- select $ from $ \ b -> do
-      where_ (b ^. BlcId `in_` (valList bids'))
-      orderBy [ asc (b ^. BlcId) ]
-      return b
-    return $ Just $ sortOn snd (zip blcs qualities)
+    let performUptime = coalesceDefault
+                        [sum_ (i ^. BlcResultDataPerformUptime)] (val 0)
+    let uptime = coalesceDefault [sum_ (i ^. BlcResultDataUptime)] (val 1)
+    let quality = case_ [ when_ (uptime ==. val 0) then_ (val 1) ] $
+                  else_ (performUptime /. uptime)
+    having (quality <. val qualityTarget)
+    groupBy (i ^. BlcResultDataBlc)
+    orderBy [ asc (i ^. BlcResultDataBlc) ]
+    return (i ^. BlcResultDataBlc, quality)
+  let bids' = map (unValue . fst) results
+  let qualities = map (unValue . snd) results
+  blcs <- select $ from $ \ b -> do
+    where_ (b ^. BlcId `in_` (valList bids'))
+    orderBy [ asc (b ^. BlcId) ]
+    return b
+  return $ sortOn snd (zip blcs qualities)
 
 getResult :: Day -> Day -> Entity Area
-          -> SqlPersistT IO (Maybe (AreaResult, [AreaResult], [BlcResult]))
+          -> SqlPersistT IO (AreaResult, [AreaResult], [BlcResult])
 getResult start end (Entity aid area) = do
-  bids <- descendantBlcsOf aid
-  complete <- fmap (unValue . head) $ select $ from $ \ i -> do
-    criteria i bids start end
-    let expectedRowCount = fromIntegral (diffDays end start + 1) * length bids
-    return (countRows ==. val expectedRowCount)
-  if complete
-  then do areaResult <- getAreaResult start end (Entity aid area)
-          subareas <- select $ from $ \ i -> do
-            where_ (i ^. AreaParent ==. val (Just aid))
-            orderBy [asc (i ^. AreaName)]
-            return i
-          subareaResults <- mapM (getAreaResult start end) subareas
-          blcResults <- getChildBlcResult start end aid
-          return $ Just (areaResult, subareaResults, blcResults)
-  else return Nothing
+  areaResult <- getAreaResult start end (Entity aid area)
+  subareas <- select $ from $ \ i -> do
+    where_ (i ^. AreaParent ==. val (Just aid))
+    orderBy [asc (i ^. AreaName)]
+    return i
+  subareaResults <- mapM (getAreaResult start end) subareas
+  blcResults <- getChildBlcResult start end aid
+  return (areaResult, subareaResults, blcResults)
 
 criteria :: ( Esqueleto query expr backend
             , PersistEntity BlcResultData

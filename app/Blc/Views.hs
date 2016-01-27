@@ -68,13 +68,6 @@ areaBlcCalculatePage start end (Entity aid area) =
         datepicker "end-field" "end" (formatDay end)
       button "Submit"
 
-areaBlcBadActorsNoDataPage :: Entity Area -> Html
-areaBlcBadActorsNoDataPage (Entity aid area) =
-  layout "Bad actors" $ do
-    h1 $ toHtml (areaName area)
-    areaNavigation aid 2
-    p "Data for report incomplete (recalculation required)."
-
 areaBlcBadActorsPage :: Day -> Day -> Entity Area -> Double -> Double
                      -> [(Entity Blc, Double)] -> [(Entity Blc, Double)]
                      -> Html
