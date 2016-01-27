@@ -12,3 +12,5 @@ homePage :: Html
 homePage = layout "Home" $ do
   p $ a ! href (viewAreasLink "blc") $ "Browse base layer controllers"
   p $ a ! href viewApcsLink $ "Browse APCs"
+  H.div ! Ha.id "motd" $ ""
+  script "$.get('motd.html', function(data) { $('#motd').html(data); })"

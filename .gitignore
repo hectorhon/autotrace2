@@ -1,2 +1,4 @@
 .stack-work/
 *.set
+static/motd.html
+static/motd/
