@@ -19,6 +19,7 @@ import Config
 import AppM
 import Area.Types
 import Blc.Types
+import Lopc.Types
 import Schema
 import API
 import Area.Site
@@ -26,6 +27,7 @@ import Blc.Site
 import Apc.Site
 import Apc.Issue.Site
 import Block.Site
+import Lopc.Handlers
 import Search.Site
 import User.AuthMiddleware
 import User.Types
@@ -41,6 +43,7 @@ server = userHandlers
     :<|> apcSite
     :<|> apcIssueSite
     :<|> blockSite
+    :<|> lopcHandlers
     :<|> searchSite
 
 readerServer :: Config -> Server Site
@@ -78,4 +81,5 @@ migrateDb :: ConnectionPool -> IO ()
 migrateDb = runSqlPool (do runMigration migrateAll
                            runMigration migrateArea
                            runMigration migrateBlc
+                           runMigration migrateLopc
                            runMigration migrateUser)
