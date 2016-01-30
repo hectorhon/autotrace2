@@ -38,12 +38,12 @@ type BlcSite = ToCreateBlc
           :<|> UnlabelBlc
 
 type ToCreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
-                   :> RequireAuth WriteRole'
+                   :> RequireAuth ControlAdminRole'
                    :> Get '[HTML] Html
 
 type CreateBlc = "area" :> Capture "aid" (Key Area) :> "blc" :> "new"
                  :> ReqBody '[FormUrlEncoded] Blc
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Post '[PlainText] Text
 
 type ViewBlc = "area" :> Capture "aid" (Key Area)
@@ -52,35 +52,35 @@ type ViewBlc = "area" :> Capture "aid" (Key Area)
 
 type ToEditBlc = "area" :> Capture "aid" (Key Area)
                  :> "blc" :> Capture "bid" (Key Blc) :> "edit"
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Get '[HTML] Html
 
 type EditBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "edit"
                :> ReqBody '[FormUrlEncoded] Blc
-               :> RequireAuth WriteRole'
+               :> RequireAuth ControlAdminRole'
                :> Post '[PlainText] Text
 
 type DeleteBlc = "area" :> Capture "aid" (Key Area)
                :> "blc" :> Capture "bid" (Key Blc) :> "definition"
-               :> RequireAuth WriteRole'
+               :> RequireAuth ControlAdminRole'
                :> Delete '[PlainText] Text
 
 type ToCalculateBlc = "area" :> Capture "aid" (Key Area)
                       :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                       :> QueryParam "start" Day :> QueryParam "end" Day
-                      :> RequireAuth WriteRole'
+                      :> RequireAuth ControlAdminRole'
                       :> Get '[HTML] Html
 
 type ToCalculateBlc' = "area" :> Capture "aid" (Key Area)
                        :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
-                       :> RequireAuth WriteRole'
+                       :> RequireAuth ControlAdminRole'
                        :> Get '[HTML] Html
 
 type CalculateBlc = "area" :> Capture "aid" (Key Area)
                     :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
-                    :> RequireAuth WriteRole'
+                    :> RequireAuth ControlAdminRole'
                     :> Post '[PlainText] Text
 
 type ViewBlcsPerformance = "area" :> Capture "aid" (Key Area)
@@ -102,22 +102,22 @@ type ViewBlcsPerformance' = "area" :> Capture "aid" (Key Area)
 type ToCalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                            :> "blc" :> "calculate"
                            :> QueryParam "start" Day :> QueryParam "end" Day
-                           :> RequireAuth WriteRole'
+                           :> RequireAuth ControlAdminRole'
                            :> Get '[HTML] Html
 
 type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                          :> "blc" :> "calculate"
                          :> ReqBody '[FormUrlEncoded] (Day, Day)
-                         :> RequireAuth WriteRole'
+                         :> RequireAuth ControlAdminRole'
                          :> Post '[PlainText] Text
 
 type ToCreateBlcLabel = "blc" :> "label" :> "new"
-                        :> RequireAuth WriteRole'
+                        :> RequireAuth ControlAdminRole'
                         :> Get '[HTML] Html
 
 type CreateBlcLabel = "blc" :> "label" :> "new"
                       :> ReqBody '[FormUrlEncoded] BlcLabel
-                      :> RequireAuth WriteRole'
+                      :> RequireAuth ControlAdminRole'
                       :> Post '[PlainText] Text
 
 type ViewBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel)
@@ -126,24 +126,24 @@ type ViewBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel)
 type ViewBlcLabels = "blc" :> "label" :> Get '[HTML] Html
 
 type ToEditBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel) :> "edit"
-                      :> RequireAuth WriteRole'
+                      :> RequireAuth ControlAdminRole'
                       :> Get '[HTML] Html
 
 type EditBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel) :> "edit"
                     :> ReqBody '[FormUrlEncoded] BlcLabel
-                    :> RequireAuth WriteRole'
+                    :> RequireAuth ControlAdminRole'
                     :> Post '[PlainText] Text
 
 type DeleteBlcLabel = "blc" :> "label" :> Capture "lid" (Key BlcLabel)
-                      :> RequireAuth WriteRole'
+                      :> RequireAuth ControlAdminRole'
                       :> Delete '[PlainText] Text
 
 type LabelBlc = "blc" :> Capture "bid" (Key Blc) :> "label"
                 :> ReqBody '[PlainText] Text
-                :> RequireAuth WriteRole'
+                :> RequireAuth ControlAdminRole'
                 :> Put '[PlainText] Text
 
 type UnlabelBlc = "blc" :> Capture "bid" (Key Blc)
                   :> "label" :> Capture "label" String
-                  :> RequireAuth WriteRole'
+                  :> RequireAuth ControlAdminRole'
                   :> Delete '[PlainText] Text

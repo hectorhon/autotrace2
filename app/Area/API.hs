@@ -21,16 +21,16 @@ type AreaSite = ToCreateArea
 
 type ToCreateArea = "area" :> "new"
                     :> QueryParam "parent" (Key Area)
-                    :> RequireAuth WriteRole'
+                    :> RequireAuth AreaAdminRole'
                     :> Get '[HTML] Html
 
 type ToCreateArea' = "area" :> "new"
-                     :> RequireAuth WriteRole'
+                     :> RequireAuth AreaAdminRole'
                      :> Get '[HTML] Html
 
 type CreateArea = "area" :> "new"
                   :> ReqBody '[FormUrlEncoded] Area
-                  :> RequireAuth WriteRole'
+                  :> RequireAuth AreaAdminRole'
                   :> Post '[PlainText] Text
 
 type ViewArea = "area" :> Capture "aid" (Key Area)
@@ -39,14 +39,14 @@ type ViewArea = "area" :> Capture "aid" (Key Area)
 type ViewAreas = "area" :> QueryParam "browse" String :> Get '[HTML] Html
 
 type ToEditArea = "area" :> Capture "aid" (Key Area) :> "edit"
-                  :> RequireAuth WriteRole'
+                  :> RequireAuth AreaAdminRole'
                   :> Get '[HTML] Html
 
 type EditArea = "area" :> Capture "aid" (Key Area) :> "edit"
                 :> ReqBody '[FormUrlEncoded] Area
-                :> RequireAuth WriteRole'
+                :> RequireAuth AreaAdminRole'
                 :> Post '[PlainText] Text
 
 type DeleteArea = "area" :> Capture "aid" (Key Area) :> "edit"
-                  :> RequireAuth WriteRole'
+                  :> RequireAuth AreaAdminRole'
                   :> Delete '[PlainText] Text

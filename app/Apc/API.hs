@@ -33,12 +33,12 @@ type ApcSite = ToCreateApc
           :<|> ViewApcCvTrend
 
 type ToCreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
-                   :> RequireAuth WriteRole'
+                   :> RequireAuth ControlAdminRole'
                    :> Get '[HTML] Html
 
 type CreateApc = "area" :> Capture "aid" (Key Area) :> "apc" :> "new"
                  :> ReqBody '[FormUrlEncoded] Apc
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Post '[PlainText] Text
 
 type ViewApc = "area" :> Capture "aid" (Key Area)
@@ -49,35 +49,35 @@ type ViewApcs = "apc" :> Get '[HTML] Html
 
 type ToEditApc = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc) :> "edit"
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Get '[HTML] Html
 
 type EditApc = "area" :> Capture "aid" (Key Area)
                :> "apc" :> Capture "apcId" (Key Apc) :> "edit"
                :> ReqBody '[FormUrlEncoded] Apc
-               :> RequireAuth WriteRole'
+               :> RequireAuth ControlAdminRole'
                :> Post '[PlainText] Text
 
 type DeleteApc = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Delete '[PlainText] Text
 
 type ToCalculateApc = "area" :> Capture "aid" (Key Area)
                       :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
                       :> QueryParam "start" Day :> QueryParam "end" Day
-                      :> RequireAuth WriteRole'
+                      :> RequireAuth ControlAdminRole'
                       :> Get '[HTML] Html
 
 type ToCalculateApc' = "area" :> Capture "aid" (Key Area)
                        :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
-                       :> RequireAuth WriteRole'
+                       :> RequireAuth ControlAdminRole'
                        :> Get '[HTML] Html
 
 type CalculateApc = "area" :> Capture "aid" (Key Area)
                     :> "apc" :> Capture "apcId" (Key Apc) :> "calculate"
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
-                    :> RequireAuth WriteRole'
+                    :> RequireAuth ControlAdminRole'
                     :> Post '[PlainText] Text
 
 type ViewApcPerformance = "area" :> Capture "aid" (Key Area)
@@ -92,14 +92,14 @@ type ViewApcPerformance' = "area" :> Capture "aid" (Key Area)
 type ToCreateApcCv = "area" :> Capture "aid" (Key Area)
                      :> "apc" :> Capture "apcId" (Key Apc)
                      :> "cv" :> "new"
-                     :> RequireAuth WriteRole'
+                     :> RequireAuth ControlAdminRole'
                      :> Get '[HTML] Html
 
 type CreateApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> "new"
                    :> ReqBody '[FormUrlEncoded] Cv
-                   :> RequireAuth WriteRole'
+                   :> RequireAuth ControlAdminRole'
                    :> Post '[PlainText] Text
 
 type ViewApcCv = "area" :> Capture "aid" (Key Area)
@@ -110,20 +110,20 @@ type ViewApcCv = "area" :> Capture "aid" (Key Area)
 type ToEditApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> Capture "cid" (Key Cv) :> "edit"
-                   :> RequireAuth WriteRole'
+                   :> RequireAuth ControlAdminRole'
                    :> Get '[HTML] Html
 
 type EditApcCv = "area" :> Capture "aid" (Key Area)
                  :> "apc" :> Capture "apcId" (Key Apc)
                  :> "cv" :> Capture "cid" (Key Cv) :> "edit"
                  :> ReqBody '[FormUrlEncoded] Cv
-                 :> RequireAuth WriteRole'
+                 :> RequireAuth ControlAdminRole'
                  :> Post '[PlainText] Text
 
 type DeleteApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
                    :> "cv" :> Capture "cid" (Key Cv) :> "definition"
-                   :> RequireAuth WriteRole'
+                   :> RequireAuth ControlAdminRole'
                    :> Delete '[PlainText] Text
 
 type ViewApcCvTrend = "area" :> Capture "aid" (Key Area)
