@@ -38,6 +38,7 @@ library
                      , persistent-postgresql
                      , parsec
                      , http-types
+                     , blaze-html
                      , aeson
                      , servant-server
                      , servant-client

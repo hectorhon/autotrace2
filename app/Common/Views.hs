@@ -9,6 +9,7 @@ module Common.Views where
 import Text.Blaze.Html5 as H hiding (i)
 import Text.Blaze.Html5.Attributes as Ha
 import Control.Monad (forM_, when)
+import Data.Text (Text, unpack)
 import User.Links
 
 layout :: String -> Html -> Html
@@ -76,6 +77,8 @@ class ToString a where
   toString :: a -> String
 instance ToString String where
   toString = Prelude.id
+instance ToString Text where
+  toString = unpack
 instance Show a => ToString a where
   toString = show
 

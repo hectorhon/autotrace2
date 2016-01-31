@@ -7,6 +7,7 @@ module Time
   ) where
 
 import Data.Time
+import Text.Blaze.Html (ToMarkup, toMarkup, toHtml)
 import Servant
 import Database.Persist.Postgresql
 import Data.Attoparsec.ByteString.Char8
@@ -23,6 +24,11 @@ tz = TimeZone (8*60) False "+8"
 
 refTime :: UTCTime
 refTime = UTCTime (fromGregorian 1970 1 1) 0
+
+-- * Blaze Html instances
+
+instance ToMarkup Day where
+  toMarkup = toHtml . formatDay
 
 -- * Servant instances
 
