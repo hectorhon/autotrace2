@@ -56,7 +56,7 @@ lopcOverviewPage majorSum major minorSum minor otherOpenSum otherOpen =
     lopcTables majorSum major
     h2 "Minor LOPCs"
     lopcTables minorSum minor
-    h2 "Open other LOPCs"
+    h2 "Open Other LOPCs"
     if null otherOpenSum then p "Hurray, nothing here!" else do
       H.div ! Ha.id "other-open-lopc-pie-chart"
             ! Ha.style "text-align:center;float:left;width:50%;"
@@ -73,15 +73,13 @@ lopcOverviewPage majorSum major minorSum minor otherOpenSum otherOpen =
         col ! class_ "other-lopc-table-col-2"
         col ! class_ "other-lopc-table-col-3"
         col ! class_ "other-lopc-table-col-4"
-        col ! class_ "other-lopc-table-col-5"
-        col ! class_ "other-lopc-table-col-6"
-        col ! class_ "other-lopc-table-col-7"
-        tr $ th "Area" >> th "" >> th "" >> th "Description" >> th "Fluid"
+        tr $ th "Area" >> th "Description" >> th "Fluid"
           >> th "Framework" >> th "Reported on"
         forM_ otherOpen (\ (Entity lid lopc) -> tr $ do
-          td (toHtml $ lopcArea1 lopc)
-          td (toHtml $ lopcArea2 lopc)
-          td (toHtml $ lopcArea3 lopc)
+          td $ do
+            H.div (toHtml $ lopcArea1 lopc)
+            H.div (toHtml $ lopcArea2 lopc)
+            H.div (toHtml $ lopcArea3 lopc)
           td (a ! href (viewLopcLink lid) $ toHtml $ lopcDescription lopc)
           td (toHtml $ lopcFluid lopc)
           td (toHtml $ lopcFramework lopc)

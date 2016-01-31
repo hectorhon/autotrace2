@@ -328,10 +328,8 @@ button:hover {
 .lopc-table-col-5 { width: 16%; }
 .lopc-table-col-6 { width: 16%; }
 
-.other-lopc-table-col-1 { width: 14%; }
-.other-lopc-table-col-2 { width: 14%; }
-.other-lopc-table-col-3 { width: 14%; }
-.other-lopc-table-col-4 { width: 16%; }
-.other-lopc-table-col-5 { width: 14%; }
-.other-lopc-table-col-6 { width: 14%; }
-.other-lopc-table-col-7 { width: 14%; }
+.other-lopc-table-col-1 { width: 25%; }
+.other-lopc-table-col-2 { width: 30%; }
+.other-lopc-table-col-3 { width: 15%; }
+.other-lopc-table-col-4 { width: 15%; }
+.other-lopc-table-col-4 { width: 15%; }
