@@ -50,7 +50,9 @@ uploadBlockConfig (params, files) = runExceptT (do
           bhid <- insert $ BlockHead name type_ snapshotDate snapshotDate group
           insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs
         Just (Entity bhid _) -> do
-          update $ \i -> where_ (i ^. BlockHeadCurrentDate ==. val snapshotDate)
+          update $ \ i -> do
+            set i [BlockHeadCurrentDate =. val snapshotDate]
+            where_ (i ^. BlockHeadId ==. val bhid)
           insertMany_ $ map (uncurry $ BlockAttr bhid snapshotDate) attrs)
   >>= either (\ errMsg -> lift $ left $ err400 { errBody = errMsg })
              (\ _ -> redirect "/" >> return undefined)
