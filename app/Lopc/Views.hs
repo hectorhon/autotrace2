@@ -4,11 +4,13 @@ module Lopc.Views where
 
 import Text.Blaze.Html5 as H hiding (head, i, map, summary)
 import Text.Blaze.Html5.Attributes as Ha hiding (open, summary)
+import Data.Aeson (encode)
 import Database.Persist.Postgresql
 import Control.Monad (forM_, when)
 import Data.Maybe (fromJust, isJust)
 import Data.List (groupBy, sortOn)
 import Data.Text (Text)
+import Data.ByteString.Lazy.Char8 (unpack)
 import Time
 import Common.Views
 import Lopc.Types
@@ -56,7 +58,12 @@ lopcOverviewPage majorSum major minorSum minor otherOpenSum otherOpen =
     lopcTables minorSum minor
     h2 "Open other LOPCs"
     if null otherOpenSum then p "Hurray, nothing here!" else do
-      table ! class_ "list-table" $ do
+      H.div ! Ha.id "other-open-lopc-pie-chart"
+            ! Ha.style "text-align:center;float:left;width:50%;"
+            $ ""
+      script (toHtml $ "var data = " ++ (unpack $ encode otherOpenSum) ++ ";")
+      script ! src "/lopc.js" $ ""
+      table ! class_ "list-table" ! Ha.style "float:right;width:50%;" $ do
         tr $ th "Area" >> th "Count"
         forM_ otherOpenSum (\ entry -> tr $ do
           td (toHtml $ fst entry)
