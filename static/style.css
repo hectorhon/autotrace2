@@ -58,6 +58,7 @@ h3 {
     width: 99%;
     padding: 0 0.5%;
     background-color: powderblue;
+    z-index: 10;
 }
 
 .navigation {
