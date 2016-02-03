@@ -62,7 +62,10 @@ calculateThread qsemn counter calcOpts connStr (Entity kBlc blc) = do
            Above -> concat ["[", sptTag,  "]-[", measTag, "]<", margin]
            Below -> concat ["[", measTag, "]-[", sptTag,  "]<", margin]
     let performUptime = filterCounts 2 $ counts [perform, uptime]
-    let modeInterv = map snd uptime
+    -- Exclude the changes at the end (note "end" is inclusive)
+    let modeInterv = filter
+          (/= (diffUTCTime (localDayToUTC (addDays 1 end)) refTime))
+          (map snd uptime)
     calcMvI  <- calcInterval (blcCalcMvICond blc)
     calcSpI  <- calcInterval (blcCalcSpICond blc)
     mvInterv <- calcChange (blcOutTag blc) calcMvI
