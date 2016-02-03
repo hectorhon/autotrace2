@@ -59,7 +59,7 @@ type EditApc = "area" :> Capture "aid" (Key Area)
                :> Post '[PlainText] Text
 
 type DeleteApc = "area" :> Capture "aid" (Key Area)
-                 :> "apc" :> Capture "apcId" (Key Apc) :> "definition"
+                 :> "apc" :> Capture "apcId" (Key Apc) :> "edit"
                  :> RequireAuth ControlAdminRole'
                  :> Delete '[PlainText] Text
 

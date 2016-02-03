@@ -62,7 +62,7 @@ type EditBlc = "area" :> Capture "aid" (Key Area)
                :> Post '[PlainText] Text
 
 type DeleteBlc = "area" :> Capture "aid" (Key Area)
-               :> "blc" :> Capture "bid" (Key Blc) :> "definition"
+               :> "blc" :> Capture "bid" (Key Blc) :> "edit"
                :> RequireAuth ControlAdminRole'
                :> Delete '[PlainText] Text
 
