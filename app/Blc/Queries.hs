@@ -172,17 +172,15 @@ getAreaResult start end (Entity aid area) = do
                       (g modeInterv) (g mvInterv) (g spInterv)
                       (f mvSat) (f cvAffBySat)
 
--- Internal use, no completeness check
 getChildBlcResult :: Day -> Day -> Key Area -> SqlPersistT IO [BlcResult]
 getChildBlcResult start end aid = do
-  blcs <- select $ from $ \ i -> do
-    where_ (i ^. BlcArea ==. val aid)
-    orderBy [asc (i ^. BlcId)]
-    return i
-  results <- select $ from $ \ i -> do
-    criteria i (map entityKey blcs) start end
-    groupBy (i ^. BlcResultDataBlc)
-    orderBy [asc (i ^. BlcResultDataBlc)]
+  results <- select $ from $ \ (i `RightOuterJoin` b) -> do
+    on (i ^. BlcResultDataBlc ==. b ^. BlcId
+        &&. i ^. BlcResultDataDay >=. (val start)
+        &&. i ^. BlcResultDataDay <=. (val end))
+    where_ (b ^. BlcArea ==. val aid)
+    groupBy (b ^. BlcId)
+    orderBy [asc (b ^. BlcId)]
     let uptimeDemand = coalesceDefault
                        [sum_ (i ^. BlcResultDataUptimeDemand)]
                        (val (0 :: Double))
@@ -199,25 +197,32 @@ getChildBlcResult start end aid = do
                  (val (0 :: Double))
     let quality = case_ [ when_ (uptime ==. val 0) then_ nothing ]
                         ( else_ $ just $ performUptime /. uptime )
-    let duration = val $ fromIntegral (length blcs)
-                         * fromIntegral (diffDays end start + 1)
-                         * 86400
+    let duration = val $ fromIntegral (diffDays end start + 1) * 86400
     let cvAffBySat= coalesceDefault [sum_$ i ^. BlcResultDataCvAffBySat] (val 0)
     let cvAffBySat' = case_ [ when_ (duration ==. val 0) then_ (val 0) ]
                             ( else_ $ cvAffBySat /. duration )
     let mvSat = coalesceDefault [sum_$ i ^. BlcResultDataMvSat] (val 0)
     let mvSat' = case_ [ when_ (duration ==. val 0) then_ (val 0) ]
                        ( else_ $ mvSat /. duration )
-    return ( compliance
+    return ( b ^. BlcId
+           , compliance
            , quality
            , sum_ (i ^. BlcResultDataModeInterv)
            , sum_ (i ^. BlcResultDataMvInterv)
            , sum_ (i ^. BlcResultDataSpInterv)
            , mvSat'
            , cvAffBySat' )
-  let f = maybe 0 (truncate :: Double -> Int)
-  let g (blc, (Value compliance, Value quality, Value modeInterv,
+  let t = maybe 0 (truncate :: Double -> Int)
+  blcs <- select $ from $ \ i -> do
+    let sel (Value a, _, _, _, _, _, _, _) = a
+    where_ (i ^. BlcId `in_` valList (map sel results))
+    orderBy [asc (i ^. BlcId)]
+    return i
+  let z (blc, (Value compliance, Value quality, Value modeInterv,
          Value mvInterv, Value spInterv, Value mvSat, Value cvAffBySat)) =
         BlcResult blc compliance quality
-                  (f modeInterv) (f mvInterv) (f spInterv) mvSat cvAffBySat
-  return $ map g $ sortOn (blcName . entityVal . fst) (zip blcs results)
+                  (t modeInterv) (t mvInterv) (t spInterv) mvSat cvAffBySat
+  let sel (_, b, c, d, e, f, g, h) = (b, c, d, e, f, g, h)
+  return $ map z $
+           sortOn (blcName . entityVal . fst) $
+           zip blcs (map sel results)
