@@ -11,8 +11,8 @@ import Text.Blaze.Html5 hiding (area, map)
 import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
-import Control.Monad
-import Control.Monad.IO.Class
+import Control.Monad.Reader
+import Control.Concurrent
 import Data.Maybe
 import Data.Text (Text)
 import AppM
@@ -25,8 +25,8 @@ import Blc.Calculate as B
 import Blc.Links
 import Area.Types
 import Area.Links
-import Area.Calculate as A
 import Common.Responses
+import Config
 
 blcSite :: ServerT BlcSite AppM
 blcSite = toCreateBlc
@@ -112,8 +112,8 @@ toCalculateBlc pid bid mStart mEnd = do
 
 calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
 calculateBlc aid bid (start, end) = do
-  A.markCalculateASD (localDayToUTC start) (localDayToUTC (addDays 1 end)) aid
-  B.markCalculate start end bid
+  chan <- reader getChan
+  liftIO (writeChan chan (job start end [bid]))
   redirect (viewBlcLink' aid bid)
   return undefined
 
@@ -165,8 +165,8 @@ toCalculateAreaBlcs aid mStart mEnd = do
 calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
 calculateAreaBlcs aid (start, end) = do
   bids <- runDb (descendantBlcsOf aid)
-  A.markCalculateASD (localDayToUTC start) (localDayToUTC (addDays 1 end)) aid
-  forM_ bids (B.markCalculate start end)
+  chan <- reader getChan
+  liftIO (writeChan chan (job start end bids))
   redirect (viewAreaLink' aid)
   return undefined
 

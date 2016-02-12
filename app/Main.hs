@@ -9,7 +9,7 @@ import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Static
 import Database.Persist.Postgresql
-import Control.Monad (when)
+import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Concurrent
 import System.IO
@@ -65,6 +65,8 @@ main = do
   srcPort    <- hGetLine srcFile >>= return . read
   cmdArgs    <- getArgs
   when (elem "migrate" cmdArgs) (migrateDb connPool)
+  chan <- newChan
+  _ <- forkIO (worker srcUrl srcPort (pack connString) chan)
   run 3000 $ staticPolicy' caching (addBase "static")
            $ auth connPool
            $ packErr
@@ -75,7 +77,15 @@ main = do
                                , getSrcUrl = srcUrl
                                , getSrcPort = srcPort
                                , getMaxQSemN = maxQSemN
+                               , getChan = chan
                                }
+
+worker :: String -> Int -> ConnectionString
+       -> Chan (ReaderT (String, Int, SqlBackend) IO ()) -> IO ()
+worker source port connString chan = runNoLoggingT $
+  withPostgresqlConn connString (\ conn -> lift $ forever $
+    do thing <- readChan chan
+       runReaderT thing (source, port, conn))
 
 migrateDb :: ConnectionPool -> IO ()
 migrateDb = runSqlPool (do runMigration migrateAll

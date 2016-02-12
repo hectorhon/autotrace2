@@ -4,7 +4,8 @@
 {-# LANGUAGE KindSignatures #-}
 
 module TimeSeriesData.Expressions
-  ( parseExpression
+  ( Expression (..)
+  , parseExpression
   , evaluate
   , listTags
   ) where
