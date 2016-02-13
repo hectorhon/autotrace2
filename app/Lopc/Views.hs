@@ -108,6 +108,11 @@ lopcOverviewPage majorSum major minorSum minor otherOpenSum otherOpen =
                 td (toHtml $ lopcFramework lopc)
                 td (toHtml $ lopcReportedOn lopc))
 
+lopcNewPage :: Html
+lopcNewPage = layout "New LOPC" $ do
+  h1 "New LOPC"
+  lopcForm Nothing
+
 lopcPage :: Entity Lopc -> Html
 lopcPage (Entity lid lopc) = layout "View LOPC" $ do
   h1 (toHtml ("View LOPC #" ++ (show (fromSqlKey lid))))

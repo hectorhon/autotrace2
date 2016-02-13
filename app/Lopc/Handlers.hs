@@ -20,12 +20,23 @@ import Lopc.Views
 import Lopc.Links
 
 lopcHandlers :: ServerT LopcRoutes AppM
-lopcHandlers = viewLopcs
+lopcHandlers = toCreateLopc
+          :<|> createLopc
+          :<|> viewLopcs
           :<|> viewLopcsOverview
           :<|> viewLopc
           :<|> toEditLopc
           :<|> editLopc
           :<|> deleteLopc
+
+toCreateLopc :: AppM Html
+toCreateLopc = return lopcNewPage
+
+createLopc :: Lopc -> AppM Text
+createLopc lopc = do
+  lid <- runDb (insert lopc)
+  redirect (viewLopcLink' lid)
+  return undefined
 
 viewLopcs :: Maybe Integer -> AppM Html
 viewLopcs year = do
