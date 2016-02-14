@@ -98,7 +98,7 @@ calculateBlc start end areaDemand blc = do
                               (localDayToUTC start)
                               (localDayToUTC (addDays 1 end)))
   -- TODO: tell missing tags
-  return $! calculateBlc' parsedBlc tsData areaDemand
+  return (calculateBlc' parsedBlc tsData areaDemand)
 
 calculateBlc' :: ParsedBlc -> TSData -> [TSInterval] -> [BlcResultData]
 calculateBlc' (ParsedBlc bid _ _ _ measTag sptTag outTag

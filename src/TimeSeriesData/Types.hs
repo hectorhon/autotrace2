@@ -6,7 +6,6 @@ import Data.Time
 import Data.Text
 import Data.Attoparsec.Text
 import Data.Aeson
-import Control.Applicative
 
 data TSValue = Continuous Double
              | Discrete String
@@ -31,16 +30,15 @@ data TSData = TSData { startOf :: NominalDiffTime
                      , dataOf  :: [(String, [TSPoint])] }
 
 decode :: Text -> Maybe [TSPoint]
-decode raw = maybeResult (parse tsPointsParser raw)
-  where tsPointsParser = many tsPointParser
+decode raw = maybeResult $ feed (parse tsPointsParser raw) "\n"
+  where tsPointsParser = (many' $ tsPointParser <* endOfLine)
         tsPointParser = do t <- decimal
                            _ <- char '\t'
                            v <- tsValueParser
-                           _ <- endOfLine
                            return $ TSPoint (fromIntegral (t :: Integer)) v
-        tsValueParser = continuousParser <|> discreteParser
+        tsValueParser = choice [continuousParser, discreteParser]
         continuousParser = double >>= return . Continuous
         discreteParser = do _ <- char '"'
-                            v <- many (notChar '"')
+                            v <- many' $ notChar '"'
                             _ <- char '"'
                             return $ Discrete v
