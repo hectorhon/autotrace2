@@ -81,11 +81,20 @@ main = do
                                }
 
 worker :: String -> Int -> ConnectionString
-       -> Chan (ReaderT (String, Int, SqlBackend) IO ()) -> IO ()
+       -> Chan (ReaderT (String, Int, SqlBackend, MVar (Int, Int)) IO ())
+       -> IO ()
 worker source port connString chan = runNoLoggingT $
-  withPostgresqlConn connString (\ conn -> lift $ forever $
+  withPostgresqlConn connString $ \ conn -> lift $ forever $
     do thing <- readChan chan
-       runReaderT thing (source, port, conn))
+       progress <- newMVar undefined
+       tid <- forkIO (monitor progress)
+       runReaderT thing (source, port, conn, progress)
+       killThread tid
+
+monitor :: MVar (Int, Int) -> IO ()
+monitor progress = forever $ do
+  threadDelay 3000000
+  withMVar progress print
 
 migrateDb :: ConnectionPool -> IO ()
 migrateDb = runSqlPool (do runMigration migrateAll

@@ -6,6 +6,7 @@ module Blc.Calculate (
 
 import Control.Monad.Reader
 import Control.Monad.Writer
+import Control.Concurrent
 import Database.Persist.Postgresql
 import Data.Tree
 import Data.List (groupBy, sortOn, nub)
@@ -16,21 +17,24 @@ import Blc.Types
 import TimeSeriesData
 import Time
 
-job :: Day -> Day -> [Key Blc] -> ReaderT (String, Int, SqlBackend) IO ()
+job :: Day -> Day -> [Key Blc]
+    -> ReaderT (String, Int, SqlBackend, MVar (Int, Int)) IO ()
 job start end bids = do
-  (_, _, db) <- ask
+  (_, _, db, progress) <- ask
   (lareas, blcs) <- liftIO $ (flip runSqlConn) db $ do
     blcs <- selectList [BlcId <-. bids] []
     lareas <- listAreas blcs
     return (lareas, blcs)
-  (results, _) <- withReaderT (\ (s, p, _) -> (s, p))
+  _ <- liftIO (swapMVar progress (0, length blcs))
+  (results, _) <- withReaderT (\ (s, p, _, _) -> (s, p))
     (runWriterT $ calculateForest start end (buildForest lareas blcs))
+  let store = mapM_ $ \ result -> do
+        deleteWhere [ BlcResultDataBlc ==. blcResultDataBlc result
+                    , BlcResultDataDay >=. start
+                    , BlcResultDataDay <=. end ]
+        insert_ result
+        liftIO (modifyMVar_ progress (\ (p, x) -> return (p + 1, x)))
   liftIO (runSqlConn (store results) db)
-  where store = mapM_ (\ result -> do
-          deleteWhere [ BlcResultDataBlc ==. blcResultDataBlc result
-                      , BlcResultDataDay >=. start
-                      , BlcResultDataDay <=. end ]
-          insert_ result)
 
 listAreas :: [Entity Blc] -> SqlPersistT IO [(Int, Entity Area)]
 listAreas blcs = do

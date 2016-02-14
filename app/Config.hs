@@ -12,7 +12,8 @@ data Config = Config { getPool :: ConnectionPool
                      , getSrcUrl :: String
                      , getSrcPort :: Int
                      , getMaxQSemN :: Int
-                     , getChan :: Chan (ReaderT (String, Int, SqlBackend) IO ())
+                     , getChan :: Chan (ReaderT ( String, Int, SqlBackend
+                                                , MVar (Int, Int)) IO () )
                      }
 
 defaultConfig :: Config
