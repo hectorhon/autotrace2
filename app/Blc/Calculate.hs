@@ -26,11 +26,11 @@ job start end bids = do
   (results, _) <- withReaderT (\ (s, p, _) -> (s, p))
     (runWriterT $ calculateForest start end (buildForest lareas blcs))
   liftIO (runSqlConn (store results) db)
-  where store results = do
-          deleteWhere [ BlcResultDataBlc <-. (map blcResultDataBlc results)
+  where store = mapM_ (\ result -> do
+          deleteWhere [ BlcResultDataBlc ==. blcResultDataBlc result
                       , BlcResultDataDay >=. start
                       , BlcResultDataDay <=. end ]
-          insertMany_ results
+          insert_ result)
 
 listAreas :: [Entity Blc] -> SqlPersistT IO [(Int, Entity Area)]
 listAreas blcs = do
