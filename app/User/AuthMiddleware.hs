@@ -25,8 +25,9 @@ auth connPool app rq k =
              on (r ^. RoleUser ==. u ^. UserId)
              where_ ( s ^. SessionIdent ==. val ident
                       &&. u ^. UserName ==. val username)
-             return (r ^. RoleRole)
+             return (u, r ^. RoleRole)
          if null vr then app rq k
-         else let p = ("Roles", pack $ show $ map unValue vr)
-                  rq' = rq { requestHeaders = p : filtered }
+         else let rolesHeader = ("Roles", pack $ show $ map (unValue . snd) vr)
+                  userHeader = ("User", pack $ show $ map fst vr)
+                  rq' = rq { requestHeaders = rolesHeader:userHeader:filtered }
               in app rq' k
