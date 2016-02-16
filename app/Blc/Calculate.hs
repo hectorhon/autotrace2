@@ -14,19 +14,19 @@ import qualified Data.Text as T (intercalate, pack, concat)
 import Control.Exception (assert)
 import Area.Types
 import Blc.Types
+import Job.Types
 import TimeSeriesData
 import Time
 
-job :: Day -> Day -> [Key Blc]
-    -> ReaderT (String, Int, SqlBackend, MVar (Int, Int)) IO ()
+job :: Day -> Day -> [Key Blc] -> Work
 job start end bids = do
-  (_, _, db, progress) <- ask
+  ((_, _, db), progress) <- ask
   (lareas, blcs) <- liftIO $ (flip runSqlConn) db $ do
     blcs <- selectList [BlcId <-. bids] []
     lareas <- listAreas blcs
     return (lareas, blcs)
   _ <- liftIO (swapMVar progress (0, length blcs))
-  (results, _) <- withReaderT (\ (s, p, _, _) -> (s, p))
+  (results, _) <- withReaderT (\ ((s, p, _), _) -> (s, p))
     (runWriterT $ calculateForest start end (buildForest lareas blcs))
   let store = mapM_ $ \ result -> do
         deleteWhere [ BlcResultDataBlc ==. blcResultDataBlc result

@@ -32,6 +32,8 @@ import Search.Site
 import User.AuthMiddleware
 import User.Types
 import User.Handlers
+import Job.Types
+import Job.ScheduleJob
 import Home.Handlers
 import Common.PackErrMiddleware (packErr)
 
@@ -80,25 +82,10 @@ main = do
                                , getChan = chan
                                }
 
-worker :: String -> Int -> ConnectionString
-       -> Chan (ReaderT (String, Int, SqlBackend, MVar (Int, Int)) IO ())
-       -> IO ()
-worker source port connString chan = runNoLoggingT $
-  withPostgresqlConn connString $ \ conn -> lift $ forever $
-    do thing <- readChan chan
-       progress <- newMVar undefined
-       tid <- forkIO (monitor progress)
-       runReaderT thing (source, port, conn, progress)
-       killThread tid
-
-monitor :: MVar (Int, Int) -> IO ()
-monitor progress = forever $ do
-  threadDelay 3000000
-  withMVar progress print
-
 migrateDb :: ConnectionPool -> IO ()
-migrateDb = runSqlPool (do runMigration migrateAll
-                           runMigration migrateArea
-                           runMigration migrateBlc
-                           runMigration migrateLopc
-                           runMigration migrateUser)
+migrateDb = runSqlPool $ do runMigration migrateAll
+                            runMigration migrateArea
+                            runMigration migrateBlc
+                            runMigration migrateLopc
+                            runMigration migrateUser
+                            runMigration migrateJob

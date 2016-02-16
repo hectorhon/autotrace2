@@ -12,7 +12,6 @@ import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
-import Control.Concurrent
 import Data.Maybe
 import Data.Text (Text)
 import AppM
@@ -21,12 +20,13 @@ import Blc.Types
 import Blc.API
 import Blc.Views
 import Blc.Queries
-import Blc.Calculate as B
+import Blc.Calculate
+import Job.ScheduleJob
 import Blc.Links
 import Area.Types
 import Area.Links
+import User.Types
 import Common.Responses
-import Config
 
 blcSite :: ServerT BlcSite AppM
 blcSite = toCreateBlc
@@ -110,12 +110,14 @@ toCalculateBlc pid bid mStart mEnd = do
       let end = maybe yesterday id mEnd
       return (blcCalculatePage start end blc)
 
-calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> AppM Text
-calculateBlc aid bid (start, end) = do
-  chan <- reader getChan
-  liftIO (writeChan chan (job start end [bid]))
-  redirect (viewBlcLink' aid bid)
-  return undefined
+calculateBlc :: Key Area -> Key Blc -> (Day, Day) -> Maybe (Entity User)
+             -> AppM Text
+calculateBlc aid bid (start, end) mUser = case mUser of
+  Nothing -> lift (left err500)
+  Just (Entity uid _) -> do
+    scheduleJob "Calculate single blc" uid (job start end [bid])
+    redirect (viewBlcLink' aid bid)
+    return undefined
 
 viewBlcsPerformance :: Key Area -> Maybe Day -> Maybe Day -> AppM Html
 viewBlcsPerformance aid mStart mEnd = do
@@ -162,13 +164,14 @@ toCalculateAreaBlcs aid mStart mEnd = do
       let end = maybe yesterday id mEnd
       return (areaBlcCalculatePage start end area)
 
-calculateAreaBlcs :: Key Area -> (Day, Day) -> AppM Text
-calculateAreaBlcs aid (start, end) = do
-  bids <- runDb (descendantBlcsOf aid)
-  chan <- reader getChan
-  liftIO (writeChan chan (job start end bids))
-  redirect (viewAreaLink' aid)
-  return undefined
+calculateAreaBlcs :: Key Area -> (Day, Day) -> Maybe (Entity User) -> AppM Text
+calculateAreaBlcs aid (start, end) mUser = case mUser of
+  Nothing -> lift (left err500)
+  Just (Entity uid _) -> do
+    bids <- runDb (descendantBlcsOf aid)
+    scheduleJob "Calculate area blcs" uid (job start end bids)
+    redirect (viewAreaLink' aid)
+    return undefined
 
 toCreateBlcLabel :: AppM Html
 toCreateBlcLabel = return blcLabelNewPage

@@ -3,7 +3,7 @@ module Config where
 import Database.Persist.Postgresql
 import Control.Concurrent
 import Data.ByteString
-import Control.Monad.Reader
+import Job.Types
 
 data Config = Config { getPool :: ConnectionPool
                      , getPoolConnStr :: ByteString
@@ -12,8 +12,7 @@ data Config = Config { getPool :: ConnectionPool
                      , getSrcUrl :: String
                      , getSrcPort :: Int
                      , getMaxQSemN :: Int
-                     , getChan :: Chan (ReaderT ( String, Int, SqlBackend
-                                                , MVar (Int, Int)) IO () )
+                     , getChan :: Chan JobQueueItem
                      }
 
 defaultConfig :: Config

@@ -12,6 +12,7 @@ import Area.Types
 import Blc.Types
 import Time
 import User.RequireAuth
+import User.GetUser
 
 type BlcSite = ToCreateBlc
           :<|> CreateBlc
@@ -81,6 +82,7 @@ type CalculateBlc = "area" :> Capture "aid" (Key Area)
                     :> "blc" :> Capture "bid" (Key Blc) :> "calculate"
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
                     :> RequireAuth ControlAdminRole'
+                    :> GetUser
                     :> Post '[PlainText] Text
 
 type ViewBlcsPerformance = "area" :> Capture "aid" (Key Area)
@@ -109,6 +111,7 @@ type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                          :> "blc" :> "calculate"
                          :> ReqBody '[FormUrlEncoded] (Day, Day)
                          :> RequireAuth ControlAdminRole'
+                         :> GetUser
                          :> Post '[PlainText] Text
 
 type ToCreateBlcLabel = "blc" :> "label" :> "new"
