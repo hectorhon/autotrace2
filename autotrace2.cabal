@@ -122,7 +122,6 @@ executable autotrace2-exe
                      , blaze-html
                      , aeson
                      , persistent-postgresql
-                     , resource-pool
                      , persistent-template
                      , esqueleto
                      , pwstore-fast

@@ -5,7 +5,6 @@ module Job.ScheduleJob
   ) where
 
 import Database.Persist.Postgresql
-import Data.Pool (withResource)
 import Control.Monad.Reader
 import Control.Monad.Logger
 import Control.Concurrent
@@ -24,14 +23,14 @@ scheduleJob description uid work = do
 
 worker :: String -> Int -> ConnectionString -> Chan JobQueueItem -> IO ()
 worker source port connString chan = runNoLoggingT $
-  withPostgresqlPool connString 2 $ \ connPool -> lift $ forever $
+  withPostgresqlConn connString $ \ conn -> lift $ forever $
     do JobQueueItem jobRecordKey work <- readChan chan
        progress <- newMVar undefined
-       let withConn = withResource connPool
-       tid <- withConn (forkIO . monitor progress jobRecordKey)
-       withConn (\ conn -> runReaderT work ((source, port, conn), progress))
-       killThread tid
-       runSqlPool (update jobRecordKey [JobRecordProgress =. 100]) connPool
+       runNoLoggingT $ withPostgresqlConn connString $ \ conn' -> lift $ do
+         tid <- forkIO (monitor progress jobRecordKey conn')
+         runReaderT work ((source, port, conn), progress)
+         killThread tid
+       runSqlConn (update jobRecordKey [JobRecordProgress =. 100]) conn
 
 monitor :: MVar (Int, Int) -> Key JobRecord -> SqlBackend -> IO ()
 monitor progress jobRecordKey conn = forever $ do
