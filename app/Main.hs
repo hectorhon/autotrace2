@@ -34,6 +34,7 @@ import User.Types
 import User.Handlers
 import Job.Types
 import Job.ScheduleJob
+import Job.Handlers
 import Home.Handlers
 import Common.PackErrMiddleware (packErr)
 
@@ -44,6 +45,7 @@ server = userHandlers
     :<|> blcSite
     :<|> apcSite
     :<|> apcIssueSite
+    :<|> jobHandlers
     :<|> blockSite
     :<|> lopcHandlers
     :<|> searchSite

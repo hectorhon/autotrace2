@@ -14,6 +14,7 @@ import Block.API
 import Lopc.Routes
 import Search.API
 import User.Routes
+import Job.Routes
 
 type Site = UserRoutes
        :<|> HomePage
@@ -21,6 +22,7 @@ type Site = UserRoutes
        :<|> BlcSite
        :<|> ApcSite
        :<|> ApcIssueSite
+       :<|> JobRoutes
        :<|> BlockSite
        :<|> LopcRoutes
        :<|> SearchSite
