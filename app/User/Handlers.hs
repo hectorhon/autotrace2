@@ -29,6 +29,15 @@ userHandlers :: ServerT UserRoutes AppM
 userHandlers = toLogin
           :<|> login
           :<|> logout
+          :<|> viewUsers
+          :<|> toCreateUser
+          :<|> createUser
+          :<|> viewUser
+          :<|> toEditUser
+          :<|> editUser
+          :<|> assignRole
+          :<|> deleteRole
+          :<|> deleteUser
 
 toLogin :: Maybe Bool -> AppM Html
 toLogin mValid = let isValid = maybe True id mValid in
@@ -75,3 +84,13 @@ logout mCookie = do
                              , ("set-cookie", usernameCookie    )
                              , ("set-cookie", identCookie       ) ] }
   return undefined
+
+viewUsers = undefined
+toCreateUser = undefined
+createUser = undefined
+viewUser = undefined
+toEditUser = undefined
+editUser = undefined
+assignRole = undefined
+deleteRole = undefined
+deleteUser = undefined

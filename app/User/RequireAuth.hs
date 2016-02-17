@@ -75,3 +75,14 @@ instance forall a. HasServer a
     then route (Proxy :: Proxy a) a rq k
     else k denyAccess
 type instance IsElem' e (RequireAuth AreaAdminRole' :> a) = IsElem e a
+
+data ManageUsersRole'
+instance RoleClass ManageUsersRole'
+instance forall a. HasServer a
+  => HasServer (RequireAuth ManageUsersRole' :> a) where
+  type ServerT (RequireAuth ManageUsersRole' :> a) m = ServerT a m
+  route (Proxy :: Proxy (RequireAuth ManageUsersRole' :> a)) a rq k =
+    if roleExist ManageUsersRole rq
+    then route (Proxy :: Proxy a) a rq k
+    else k denyAccess
+type instance IsElem' e (RequireAuth ManageUsersRole' :> a) = IsElem e a

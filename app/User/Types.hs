@@ -17,7 +17,9 @@ import Servant
 import Data.Time
 import Data.Text (unpack)
 import Data.ByteString.Char8 (ByteString, pack)
+import Data.Maybe (listToMaybe)
 import Control.Monad.Except
+import PersistKeyInstances ()
 import User.Enums
 
 share [ mkPersist sqlSettings,
@@ -49,3 +51,13 @@ instance FromFormUrlEncoded LoginData where
                       (return . pack . unpack)
                       (lookup "password" params)
     return (LoginData name password)
+
+instance FromFormUrlEncoded Role where
+  fromFormUrlEncoded params = runExcept $ do
+    user <- maybe (throwError "Missing user ID")
+                  (return)
+                  (lookup "uid" params >>= fromText)
+    role <- maybe (throwError "Missing or invalid role")
+                  (return . fst)
+                  (lookup "role" params >>= listToMaybe . reads . unpack)
+    return (Role user role)
