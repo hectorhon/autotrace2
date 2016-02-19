@@ -34,6 +34,7 @@ share [ mkPersist sqlSettings,
     Role
       user          UserId
       role          RoleType
+      UniqueRole user role
     Session
       ident         ByteString
       user          UserId
