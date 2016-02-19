@@ -6,9 +6,10 @@
 
 module Common.Views where
 
-import Text.Blaze.Html5 as H hiding (i)
+import Text.Blaze.Html5 as H hiding (i, map)
 import Text.Blaze.Html5.Attributes as Ha
 import Control.Monad (forM_, when)
+import Data.List (intersperse)
 import Data.Text (Text, unpack)
 import User.Links
 
@@ -188,6 +189,14 @@ navigation links choice = ul ! class_ "navigation" $ forM_ (zip [1..] links)
     a ! href linkUrl
       ! class_ (if choice == index then "selected" else "")
       $ toHtml linkLabel)
+
+breadCrumbs :: [(String, Maybe AttributeValue)] -> Html
+breadCrumbs links = p ! class_ "breadcrumbs" $ (mconcat pieces)
+  where pieces = intersperse (H.span " > ") crumbs
+        crumbs = map toCrumb links
+        toCrumb (crumb, mLink) = case mLink of
+          Just l -> a ! href l $ toHtml crumb
+          Nothing -> H.span (toHtml crumb)
 
 bar :: Real a => String -> a -> a -> String -> Html
 bar color val maxVal barContents = let

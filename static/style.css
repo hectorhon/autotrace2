@@ -75,6 +75,10 @@ h3 {
     font-weight: bold;
 }
 
+.breadcrumbs {
+    font-size: small;
+}
+
 form {
     margin: 1em auto;
     overflow: auto;
