@@ -40,6 +40,7 @@ share [ mkPersist sqlSettings,
       equipmentTag      Text
       equipmentType     Text
       description       Text
+      failureMechanism  Text
       otherRef          Text
       remarks           Text
       closedOn          Day Maybe
@@ -64,6 +65,7 @@ instance FromFormUrlEncoded Lopc where
     equipmentTag   <- lookup' "equipmentTag" params return
     equipmentType  <- lookup' "equipmentType" params return
     description    <- lookup' "description" params return
+    failureMechanism <- lookup' "failureMech" params return
     otherRef       <- lookup' "otherRef" params return
     remarks        <- lookup' "remarks" params return
     closedOn       <- maybe (throwError "Missing closedOn")
@@ -71,7 +73,7 @@ instance FromFormUrlEncoded Lopc where
                             (lookup "closedon" params)
     return (Lopc reportedOn area1 area2 area3 classification framework
                  fluid composition pressure hazardous equipmentTag equipmentType
-                 description otherRef remarks closedOn)
+                 description failureMechanism otherRef remarks closedOn)
 
 lookup' :: Text -> [(Text, Text)] -> (Text -> Maybe a) -> Except String a
 lookup' param params transform =

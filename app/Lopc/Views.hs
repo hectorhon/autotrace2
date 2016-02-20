@@ -126,6 +126,7 @@ lopcDD (Entity lid lopc) = do
     tr $ th "Composition" >> td (toHtml $ lopcComposition lopc)
     tr $ th "Pressure" >> td (toHtml $ maybe 0 P.id (lopcPressure lopc))
     tr $ th "Hazardous" >> td (toHtml $ lopcHazardous lopc)
+    tr $ th "Failure mech." >> td (toHtml $ lopcFailureMechanism lopc)
   editableH2 "Misc. info" (toEditLopcLink lid)
   table ! class_ "definition-table" $ do
     tr $ th "Other ref." >> td (toHtml $ lopcOtherRef lopc)
@@ -187,6 +188,7 @@ lopcForm mLopc = H.form ! method "post" ! class_ "form-expanded" $ do
                         else P.id)
               mLopc) $
         (input ! Ha.type_ "checkbox" ! Ha.name "hazardous" ! Ha.value "Yes")
+    field "Failure mech." "failuremech" lopcFailureMechanism mLopc
   fieldset $ do
     legend "Misc. info"
     field "Other ref." "otherref" lopcOtherRef mLopc
