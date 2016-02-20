@@ -11,14 +11,21 @@ import Data.Text
 import Lopc.Types
 import User.RequireAuth
 
-type LopcRoutes = ToCreateLopc
+type LopcRoutes = ViewLopcOverview
+             :<|> ViewLopcList
+             :<|> ToCreateLopc
              :<|> CreateLopc
-             :<|> ViewLopcs
-             :<|> ViewLopcsOverview
              :<|> ViewLopc
              :<|> ToEditLopc
              :<|> EditLopc
              :<|> DeleteLopc
+
+type ViewLopcOverview = "lopc" :> QueryParam "year" Integer :> Get '[HTML] Html
+type ViewLopcOverview' = "lopc" :> Get '[HTML] Html
+
+type ViewLopcList = "lopc" :> "list" :> QueryParam "status" Text
+                     :> Get '[HTML] Html
+type ViewLopcList' = "lopc" :> "list" :> Get '[HTML] Html
 
 type ToCreateLopc = "lopc" :> "new"
                     :> RequireAuth LopcUserRole'
@@ -28,14 +35,6 @@ type CreateLopc = "lopc" :> "new"
                   :> ReqBody '[FormUrlEncoded] Lopc
                   :> RequireAuth LopcUserRole'
                   :> Post '[PlainText] Text
-
-type ViewLopcs = "lopc" :> "summary" :> QueryParam "year" Integer
-                 :> Get '[HTML] Html
-type ViewLopcs' = "lopc" :> "summary" :> Get '[HTML] Html
-
-type ViewLopcsOverview = "lopc" :> "overview" :> QueryParam "year" Integer
-                         :> Get '[HTML] Html
-type ViewLopcsOverview' = "lopc" :> "overview" :> Get '[HTML] Html
 
 type ViewLopc = "lopc" :> Capture "lid" (Key Lopc) :> Get '[HTML] Html
 

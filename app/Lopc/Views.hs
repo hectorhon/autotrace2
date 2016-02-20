@@ -2,123 +2,105 @@
 
 module Lopc.Views where
 
-import Text.Blaze.Html5 as H hiding (head, i, map, summary)
+import Prelude as P
+import Text.Blaze.Html5 as H hiding (head, i, map, summary, area)
 import Text.Blaze.Html5.Attributes as Ha hiding (open, summary)
-import Data.Aeson (encode)
-import Database.Persist.Postgresql
+import Database.Persist.Postgresql hiding (count)
 import Control.Monad (forM_, when)
-import Data.Maybe (fromJust, isJust)
+import Data.Function (on)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Data.List (groupBy, sortOn)
-import Data.Text (Text)
-import Data.ByteString.Lazy.Char8 (unpack)
+import Data.Text (unpack)
 import Time
 import Common.Views
 import Lopc.Types
 import Lopc.Links
 
-lopcSummaryPage :: [(Int, Int, Int, Int, Int)] -> [Entity Lopc] -> Html
-lopcSummaryPage statistics lopcs = layout "LOPC" $ do
+lopcOverviewPage :: [Entity Lopc] -> Integer -> [Integer] -> Int -> Int -> Html
+lopcOverviewPage lopcs year years numAreas numPastOpen = layout "LOPC" $ do
   h1 "LOPC"
-  h2 "Summary"
-  table ! class_ "list-table" $ do
-    tr $ th "Month" >> th "New" >> th "Total open"
-      >> th "Open (hazardous)" >> th "Open (non-hazardous)" >> th "Closed"
-    forM_ (zip (map fst (months defaultTimeLocale)) statistics)
-      (\ (month, (new, open, openHz, openNHz, closed)) -> tr $ do
-         td (toHtml month)
-         td (toHtml $ show new)
-         td (toHtml $ show open)
-         td (toHtml $ show openHz)
-         td (toHtml $ show openNHz)
-         td (toHtml $ show closed))
-  let groupByArea1 =
-        groupBy (\ (Entity _ i) (Entity _ j) -> lopcArea1 i == lopcArea1 j)
-        . sortOn (lopcArea1 . entityVal)
-  let lopcs' = groupByArea1 lopcs
-  forM_ lopcs' $ \ ls -> do
-    h2 (toHtml $ lopcArea1 (entityVal (head ls)))
-    table $ do
-      tr $ th "Area" >> th "Area" >> th "Description" >> th "Reported on"
-      forM_ ls $ \ (Entity _ lopc) -> tr $ do
-        td (toHtml $ lopcArea2 lopc)
-        td (toHtml $ lopcArea3 lopc)
-        td (toHtml $ lopcDescription lopc)
-        td (toHtml $ show $ lopcReportedOn lopc)
+  lopcNavigation 1
+  h2 "YTD summary"
+  H.form ! class_ "line-form" ! Ha.style "text-align:left;" $
+    selectField "Year" "year" P.id (Just year) (zip years (map show years))
+      ! onchange "this.form.submit()"
+  let summary = let lopcs' = map entityVal lopcs
+                    grouped= [ filter ((== MajorLopc).lopcClassification) lopcs'
+                             , filter ((== MinorLopc).lopcClassification) lopcs'
+                             , filter ((== OtherLopc).lopcClassification) lopcs'
+                             ]
+                    isOpen = isNothing . lopcClosedOn
+                in zip [MajorLopc, MinorLopc, OtherLopc]
+                       (map (tallyBy2 lopcArea1 isOpen (const True)) grouped)
+  table ! class_ "list-table-firstcol" $ do
+    tr $ do
+      th "Classification"
+      th "Open/Total"
+      th ! colspan (stringValue $ show numAreas) $ "Totals by area"
+    forM_ summary $ \ (classification, tallies) -> do
+      tr ! Ha.style "height:5em;" $ do
+        td $ toHtml (show classification)
+        td $ do
+          H.span $ toHtml (sum (map second tallies))
+          H.span "/"
+          H.span $ toHtml (sum (map third tallies))
+        let sortByMaxOpen = reverse . sortOn (\ (_, x, _) -> x)
+        if null tallies
+        then mconcat $ [td "-"] ++ (replicate (numAreas - 1) (td ""))
+        else mconcat $ take numAreas $ (flip (++) (repeat (td ""))) $
+          (flip map) (sortByMaxOpen tallies) (\ (area, open, closed) -> td $ do
+            H.span $ toHtml (show open ++ "/" ++ show closed)
+            H.br
+            H.span $ toHtml (unpack area))
+  p $ toHtml ("There are "
+              ++ (show numPastOpen)
+              ++ " open LOPC(s) from past years.")
 
-lopcOverviewPage :: [(Text, Int)] -> [Entity Lopc]
-                 -> [(Text, Int)] -> [Entity Lopc]
-                 -> [(Text, Int)] -> [Entity Lopc]
-                 -> Html
-lopcOverviewPage majorSum major minorSum minor otherOpenSum otherOpen =
-  layout "LOPC" $ do
-    h1 "LOPC overview"
-    h2 "Major LOPCs"
-    lopcTables majorSum major
-    h2 "Minor LOPCs"
-    lopcTables minorSum minor
-    h2 "Open Other LOPCs"
-    if null otherOpenSum then p "Hurray, nothing here!" else do
-      H.div ! Ha.id "other-open-lopc-pie-chart"
-            ! Ha.style "text-align:center;float:left;width:50%;"
-            $ ""
-      script (toHtml $ "var data = " ++ (unpack $ encode otherOpenSum) ++ ";")
-      script ! src "/lopc.js" $ ""
-      table ! class_ "list-table" ! Ha.style "float:right;width:50%;" $ do
-        tr $ th "Area" >> th "Count"
-        forM_ otherOpenSum (\ entry -> tr $ do
-          td (toHtml $ fst entry)
-          td (toHtml $ show $ snd entry))
-      table ! class_ "list-table" $ do
-        col ! class_ "other-lopc-table-col-1"
-        col ! class_ "other-lopc-table-col-2"
-        col ! class_ "other-lopc-table-col-3"
-        col ! class_ "other-lopc-table-col-4"
-        tr $ th "Area" >> th "Description" >> th "Fluid"
-          >> th "Framework" >> th "Reported on"
-        forM_ otherOpen (\ (Entity lid lopc) -> tr $ do
-          td $ do
-            H.div (toHtml $ lopcArea1 lopc)
-            H.div (toHtml $ lopcArea2 lopc)
-            H.div (toHtml $ lopcArea3 lopc)
-          td (a ! href (viewLopcLink lid) $ toHtml $ lopcDescription lopc)
-          td (toHtml $ lopcFluid lopc)
-          td (toHtml $ lopcFramework lopc)
-          td (toHtml $ lopcReportedOn lopc))
-  where lopcTables summary lopcs =
-          if null summary then p "Hurray, nothing here!" else do
-            table ! class_ "list-table" $ do
-              tr $ th "Area" >> th "Count"
-              forM_ summary (\ entry -> tr $ do
-                td (toHtml $ fst entry)
-                td (toHtml $ show $ snd entry))
-            table ! class_ "list-table" $ do
-              col ! class_ "lopc-table-col-1"
-              col ! class_ "lopc-table-col-2"
-              col ! class_ "lopc-table-col-3"
-              col ! class_ "lopc-table-col-4"
-              col ! class_ "lopc-table-col-5"
-              col ! class_ "lopc-table-col-6"
-              tr $ th "Area" >> th "" >> th "" >> th "Description"
-                >> th "Framework" >> th "Reported on"
-              forM_ lopcs (\ (Entity lid lopc) -> tr $ do
-                td (toHtml $ lopcArea1 lopc)
-                td (toHtml $ lopcArea2 lopc)
-                td (toHtml $ lopcArea3 lopc)
-                td (a ! href (viewLopcLink lid) $ toHtml $ lopcDescription lopc)
-                td (toHtml $ lopcFramework lopc)
-                td (toHtml $ lopcReportedOn lopc))
+data Status = Open | Closed deriving Eq  -- Hack for selectField
+instance Show Status where
+  show Open = "open"
+  show Closed = "closed"
+
+lopcListPage :: [Entity Lopc] -> Bool -> Html
+lopcListPage lopcs isOpen = layout "LOPC List" $ do
+  h1 "LOPC"
+  lopcNavigation 2
+  h2 "LOPC list"
+  H.form ! class_ "line-form" ! Ha.style "text-align:left;" $
+    selectField "Filter by" "status"
+      P.id (Just $ if isOpen then Open else Closed)
+      [(Open, "Open"), (Closed, "Closed")]
+      ! onchange "this.form.submit()"
+  forM_ (groupByAccessor (lopcArea1 . entityVal) lopcs) $ \ lopcs' -> do
+    h3 $ toHtml ((lopcArea1 . entityVal) (head lopcs'))
+    table ! class_ "list-table" $ do
+      col ! class_ "lopc-table-col-1"
+      col ! class_ "lopc-table-col-2"
+      col ! class_ "lopc-table-col-3"
+      col ! class_ "lopc-table-col-4"
+      tr $ th "Area" ! colspan "2" >> th "Description" >> th "Reported on"
+      forM_ lopcs' $ \ (Entity lid lopc) -> tr $ do
+        td $ toHtml (lopcArea2 lopc)
+        td $ toHtml (lopcArea3 lopc)
+        td $ a ! href (viewLopcLink lid) $ toHtml (lopcDescription lopc)
+        td $ toHtml (lopcReportedOn lopc)
+
+lopcPage :: Entity Lopc -> Html
+lopcPage (Entity lid lopc) = layout "View LOPC" $ do
+  h1 (toHtml ("View LOPC #" ++ (show (fromSqlKey lid))))
+  lopcNavigation 2
+  lopcDD (Entity lid lopc)
+
+lopcEditPage :: Lopc -> Html
+lopcEditPage lopc = layout "Edit LOPC" $ do
+  h1 "Edit LOPC"
+  lopcNavigation 2
+  lopcForm (Just lopc)
 
 lopcNewPage :: Html
 lopcNewPage = layout "New LOPC" $ do
   h1 "New LOPC"
   lopcForm Nothing
-
-lopcPage :: Entity Lopc -> Html
-lopcPage (Entity lid lopc) = layout "View LOPC" $ do
-  h1 (toHtml ("View LOPC #" ++ (show (fromSqlKey lid))))
-  let (year, _, _) = toGregorian (lopcReportedOn lopc)
-  navigation [("Back to overview", viewLopcsOverviewLink year)] 0
-  lopcDD (Entity lid lopc)
 
 lopcDD :: Entity Lopc -> Html
 lopcDD (Entity lid lopc) = do
@@ -142,17 +124,12 @@ lopcDD (Entity lid lopc) = do
   table ! class_ "definition-table" $ do
     tr $ th "Fluid" >> td (toHtml $ lopcFluid lopc)
     tr $ th "Composition" >> td (toHtml $ lopcComposition lopc)
-    tr $ th "Pressure" >> td (toHtml $ maybe 0 Prelude.id (lopcPressure lopc))
+    tr $ th "Pressure" >> td (toHtml $ maybe 0 P.id (lopcPressure lopc))
     tr $ th "Hazardous" >> td (toHtml $ lopcHazardous lopc)
   editableH2 "Misc. info" (toEditLopcLink lid)
   table ! class_ "definition-table" $ do
     tr $ th "Other ref." >> td (toHtml $ lopcOtherRef lopc)
     tr $ th "Remarks" >> td (toHtml $ lopcRemarks lopc)
-
-lopcEditPage :: Lopc -> Html
-lopcEditPage lopc = layout "Edit LOPC" $ do
-  h1 "Edit LOPC"
-  lopcForm (Just lopc)
 
 lopcForm :: Maybe Lopc -> Html
 lopcForm mLopc = H.form ! method "post" ! class_ "form-expanded" $ do
@@ -170,13 +147,13 @@ lopcForm mLopc = H.form ! method "post" ! class_ "form-expanded" $ do
     field "Framework" "framework" lopcFramework mLopc
     H.label $ do
       H.span "Closed?"
-      (maybe Prelude.id
+      (maybe P.id
              (\ lopc -> if isJust (lopcClosedOn lopc) then (! Ha.checked "")
-                        else Prelude.id)
+                        else P.id)
               mLopc) $
         (input ! Ha.type_ "checkbox" ! Ha.id "isclosed-field" ! Ha.value "Yes")
     let f = if isJust mLopc && isJust (lopcClosedOn (fromJust mLopc))
-            then Prelude.id else (! Ha.style "display:none;")
+            then P.id else (! Ha.style "display:none;")
     f $ H.label ! Ha.id "closedon-attr-field" $ do
       H.span "Closing date"
       datepicker "closedon-field" "closedon"
@@ -204,10 +181,10 @@ lopcForm mLopc = H.form ! method "post" ! class_ "form-expanded" $ do
     field "Pressure" "pressure" (maybe "" show . lopcPressure) mLopc
     H.label $ do
       H.span "Hazardous?"
-      (maybe Prelude.id
+      (maybe P.id
              (\ lopc -> if lopcHazardous lopc
                         then (! Ha.checked "")
-                        else Prelude.id)
+                        else P.id)
               mLopc) $
         (input ! Ha.type_ "checkbox" ! Ha.name "hazardous" ! Ha.value "Yes")
   fieldset $ do
@@ -216,5 +193,32 @@ lopcForm mLopc = H.form ! method "post" ! class_ "form-expanded" $ do
     field "Remarks" "remarks" lopcRemarks mLopc
   button "Save"
   when (isJust mLopc)
-       (deleteButton "lopc-delete-button" viewLopcsOverviewDefaultYearLink')
+       (deleteButton "lopc-delete-button" viewLopcOverviewLinkDefaultYear')
   cancelButton "lopc-cancel-button"
+
+lopcNavigation :: Int -> Html
+lopcNavigation = navigation
+  [ ("Overview", viewLopcOverviewLinkDefaultYear)
+  , ("List", viewLopcListLinkDefaultOpen)
+  , ("Register new", toCreateLopcLink)
+  ]
+
+groupByAccessor :: Ord b => (a -> b) -> [a] -> [[a]]
+groupByAccessor f = groupBy ((==) `on` f) . sortOn f
+
+tallyBy2 :: Ord b => (a -> b)
+                  -> (a -> Bool)
+                  -> (a -> Bool)
+                  -> [a]
+                  -> [(b, Int, Int)]
+tallyBy2 f g1 g2 = map tally . groupByAccessor f
+  where tally l = (f (head l), length (filter g1 l), length (filter g2 l))
+
+first :: (a, b, c) -> a
+first (x, _, _) = x
+
+second :: (a, b, c) -> b
+second (_, y, _) = y
+
+third :: (a, b, c) -> c
+third (_, _, z) = z

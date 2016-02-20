@@ -7,24 +7,16 @@ import Common.Links
 import Lopc.Types
 import Lopc.Routes
 
-viewLopcsLinkDefaultYear :: AttributeValue
-viewLopcsLinkDefaultYear = stringValue $
-  "/" ++ show (linkTo (Proxy :: Proxy ViewLopcs'))
+viewLopcOverviewLinkDefaultYear' :: String
+viewLopcOverviewLinkDefaultYear' =
+  "/" ++ show (linkTo (Proxy :: Proxy ViewLopcOverview'))
 
+viewLopcOverviewLinkDefaultYear :: AttributeValue
+viewLopcOverviewLinkDefaultYear = stringValue viewLopcOverviewLinkDefaultYear'
 
-
-viewLopcsOverviewLink :: Integer -> AttributeValue
-viewLopcsOverviewLink year = stringValue $
-  "/" ++ show (linkTo (Proxy :: Proxy ViewLopcsOverview) year)
-
-viewLopcsOverviewDefaultYearLink' :: String
-viewLopcsOverviewDefaultYearLink' =
-  "/" ++ show (linkTo (Proxy :: Proxy ViewLopcsOverview'))
-
-viewLopcsOverviewDefaultYearLink :: AttributeValue
-viewLopcsOverviewDefaultYearLink = stringValue viewLopcsOverviewDefaultYearLink'
-
-
+viewLopcListLinkDefaultOpen :: AttributeValue
+viewLopcListLinkDefaultOpen = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ViewLopcList'))
 
 viewLopcLink' :: Key Lopc -> String
 viewLopcLink' lid =
@@ -33,7 +25,9 @@ viewLopcLink' lid =
 viewLopcLink :: Key Lopc -> AttributeValue
 viewLopcLink lid = stringValue (viewLopcLink' lid)
 
-
+toCreateLopcLink :: AttributeValue
+toCreateLopcLink = stringValue $
+  "/" ++ show (linkTo (Proxy :: Proxy ToCreateLopc))
 
 toEditLopcLink' :: Key Lopc -> String
 toEditLopcLink' lid =

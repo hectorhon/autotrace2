@@ -6,5 +6,5 @@ import Database.Persist.TH
 
 data LopcClassification = MajorLopc
                         | MinorLopc
-                        | OtherLopc deriving (Show, Read, Eq)
+                        | OtherLopc deriving (Show, Read, Eq, Ord)
 derivePersistField "LopcClassification"
