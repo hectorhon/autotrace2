@@ -28,6 +28,8 @@ type BlcSite = ToCreateBlc
           :<|> ToCalculateAreaBlcs
           :<|> CalculateAreaBlcs
 
+          :<|> ListBlcTags
+
           :<|> ToCreateBlcLabel
           :<|> CreateBlcLabel
           :<|> ViewBlcLabel
@@ -113,6 +115,10 @@ type CalculateAreaBlcs = "area" :> Capture "aid" (Key Area)
                          :> RequireAuth ControlAdminRole'
                          :> GetUser
                          :> Post '[PlainText] Text
+
+type ListBlcTags = "area" :> Capture "aid" (Key Area)
+                   :> "blc" :> "tags"
+                   :> Get '[HTML] Html
 
 type ToCreateBlcLabel = "blc" :> "label" :> "new"
                         :> RequireAuth ControlAdminRole'

@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Blc.Calculate (
-  job
+module Blc.Calculate
+  ( job
+  , parseBlc
+  , listBlcTags
   ) where
 
 import Control.Monad.Reader

@@ -2,10 +2,10 @@
 
 module Blc.Views where
 
-import Text.Blaze.Html5 as H hiding (area, q)
-import Text.Blaze.Html5.Attributes as Ha hiding (start)
+import Text.Blaze.Html5 as H hiding (area, q, map)
+import Text.Blaze.Html5.Attributes as Ha hiding (start, list)
 import Database.Persist.Postgresql
-import Data.List (sortOn)
+import Data.List (sortOn, partition)
 import Data.Maybe (isJust)
 import Control.Monad (forM_, when)
 import Common.Views
@@ -273,6 +273,17 @@ blcDD blc (Entity pid parent) = table ! class_ "definition-table" $ do
   tr $ th "Compliance margin" >> td (toHtml $ blcMargin blc)
   tr $ th "Calc. MV interv. when" >> td (toHtml $ blcCalcMvICond blc)
   tr $ th "Calc. SP interv. when" >> td (toHtml $ blcCalcSpICond blc)
+
+blcListTagsPage :: [(String, Bool)] -> [String] -> Html
+blcListTagsPage list parseErrors = layout "List tags" $ do
+  h1 "List tags"
+  let (valid, invalid) = partition ((== True) . snd) list
+  when (not (null invalid)) $ do
+    h2 "Invalid"
+    ul (forM_ (map fst invalid) (li . toHtml))
+  when (not (null valid)) $ do
+    h2 "Valid"
+    ul (forM_ (map fst valid) (li . toHtml))
 
 blcLabelNewPage :: Html
 blcLabelNewPage = layout "New label for controller" $ do

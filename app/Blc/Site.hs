@@ -12,9 +12,11 @@ import Database.Persist.Postgresql
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
+import Control.Monad.Writer
 import Data.Maybe
 import Data.Text (Text)
 import AppM
+import Config
 import Time
 import Blc.Types
 import Blc.API
@@ -27,6 +29,7 @@ import Area.Types
 import Area.Links
 import User.Types
 import Common.Responses
+import TimeSeriesData
 
 blcSite :: ServerT BlcSite AppM
 blcSite = toCreateBlc
@@ -42,6 +45,8 @@ blcSite = toCreateBlc
      :<|> viewBlcBadActors
      :<|> toCalculateAreaBlcs
      :<|> calculateAreaBlcs
+
+     :<|> listBlcsTags
 
      :<|> toCreateBlcLabel
      :<|> createBlcLabel
@@ -172,6 +177,21 @@ calculateAreaBlcs aid (start, end) mUser = case mUser of
     scheduleJob "Calculate area blcs" uid (job start end bids)
     redirect (viewAreaLink' aid)
     return undefined
+
+listBlcsTags :: Key Area -> AppM Html
+listBlcsTags aid = do
+  blcs <- runDb $ do
+    bids <- descendantBlcsOf aid
+    selectList [BlcId <-. bids] [Asc BlcName]
+  LocalTime today _ <- liftIO (liftM (utcToLocalTime tz) getCurrentTime)
+  let start = UTCTime (addDays (-1) today) 0
+  let end = UTCTime today 0
+  let (pblcs, parseErrors) = runWriter (mapM parseBlc blcs)
+  let tags = concat (map listBlcTags pblcs)
+  url <- reader getSrcUrl
+  port <- reader getSrcPort
+  sampleData <- liftIO (mapM (getTSPoints url port start end) tags)
+  return (blcListTagsPage (zip tags (map (not . null) sampleData)) parseErrors)
 
 toCreateBlcLabel :: AppM Html
 toCreateBlcLabel = return blcLabelNewPage
