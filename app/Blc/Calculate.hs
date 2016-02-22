@@ -26,14 +26,13 @@ job start end bids = do
     lareas <- listAreas blcs
     return (lareas, blcs)
   _ <- liftIO (swapMVar progress (0, length blcs))
-  (results, _) <- withReaderT (\ ((s, p, _), _) -> (s, p))
+  (results, _) <- withReaderT (\ ((s, p, _), progress') -> (s, p, progress'))
     (runWriterT $ calculateForest start end (buildForest lareas blcs))
   let store = mapM_ $ \ result -> do
         deleteWhere [ BlcResultDataBlc ==. blcResultDataBlc result
                     , BlcResultDataDay >=. start
                     , BlcResultDataDay <=. end ]
         insert_ result
-        liftIO (modifyMVar_ progress (\ (p, x) -> return (p + 1, x)))
   liftIO (runSqlConn (store results) db)
 
 listAreas :: [Entity Blc] -> SqlPersistT IO [(Int, Entity Area)]
@@ -65,14 +64,16 @@ buildForest areas blcs = unfoldForest builder seeds
                              . areaParent . entityVal
 
 calculateForest :: Day -> Day -> Forest (Entity Area, [Entity Blc])
-                -> WriterT [String] (ReaderT (String, Int) IO) [BlcResultData]
+                -> WriterT [String] (ReaderT (String, Int, MVar Progress) IO)
+                   [BlcResultData]
 calculateForest start end forest = do
   fmap concat (mapM (calculateTree [(startNDT, endNDT)] start end) forest)
   where startNDT = diffUTCTime (localDayToUTC start) refTime
         endNDT = diffUTCTime (localDayToUTC (addDays 1 end)) refTime
 
 calculateTree :: [TSInterval] -> Day -> Day -> Tree (Entity Area, [Entity Blc])
-                 -> WriterT [String] (ReaderT (String, Int) IO) [BlcResultData]
+                 -> WriterT [String] (ReaderT (String, Int, MVar Progress) IO)
+                    [BlcResultData]
 calculateTree ancestorDemand start end tree = do
   localDemand <- calculateAreaDemand (localDayToUTC start)
                                      (localDayToUTC (addDays 1 end))
@@ -83,25 +84,28 @@ calculateTree ancestorDemand start end tree = do
   return (concat blcResults ++ concat moreBlcResults) 
 
 calculateAreaDemand :: UTCTime -> UTCTime -> Area
-                    -> WriterT [String] (ReaderT (String, Int) IO) [TSInterval]
+                    -> WriterT [String]
+                       (ReaderT (String, Int, MVar Progress) IO) [TSInterval]
 calculateAreaDemand start end area =
   case parseExpression (areaDemandCond area) of
     Left err -> tell [show err] >> return []
     Right condition -> do
-      (source, port) <- ask
+      (source, port, _) <- ask
       tsData <- liftIO (getTSData source port (listTags condition) start end)
       return (evaluate condition tsData)
 
 calculateBlc :: Day -> Day -> [TSInterval] -> Entity Blc
-             -> WriterT [String] (ReaderT (String, Int) IO) [BlcResultData]
+             -> WriterT [String] (ReaderT (String, Int, MVar Progress) IO)
+                [BlcResultData]
 calculateBlc start end areaDemand blc = do
-  (source, port) <- ask
+  (source, port, progress) <- ask
   let (parsedBlc, parseLog) = runWriter (parseBlc blc)
   tell parseLog
   tsData <- liftIO (getTSData source port (listBlcTags parsedBlc)
                               (localDayToUTC start)
                               (localDayToUTC (addDays 1 end)))
   -- TODO: tell missing tags
+  liftIO (modifyMVar_ progress (\ (p, x) -> return (p + 1, x)))
   return (calculateBlc' parsedBlc tsData areaDemand)
 
 calculateBlc' :: ParsedBlc -> TSData -> [TSInterval] -> [BlcResultData]

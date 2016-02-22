@@ -9,5 +9,6 @@ data RoleType = LopcUserRole
               | ControlAdminRole
               | AreaAdminRole
               | ManageUsersRole
+              | SysAdminRole
               deriving (Show, Read, Eq)
 derivePersistField "RoleType"

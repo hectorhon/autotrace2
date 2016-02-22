@@ -86,3 +86,14 @@ instance forall a. HasServer a
     then route (Proxy :: Proxy a) a rq k
     else k denyAccess
 type instance IsElem' e (RequireAuth ManageUsersRole' :> a) = IsElem e a
+
+data SysAdminRole'
+instance RoleClass SysAdminRole'
+instance forall a. HasServer a
+  => HasServer (RequireAuth SysAdminRole' :> a) where
+  type ServerT (RequireAuth SysAdminRole' :> a) m = ServerT a m
+  route (Proxy :: Proxy (RequireAuth SysAdminRole' :> a)) a rq k =
+    if roleExist SysAdminRole rq
+    then route (Proxy :: Proxy a) a rq k
+    else k denyAccess
+type instance IsElem' e (RequireAuth SysAdminRole' :> a) = IsElem e a

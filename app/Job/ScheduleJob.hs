@@ -17,20 +17,22 @@ import Config
 scheduleJob :: String -> Key User -> Work -> AppM ()
 scheduleJob description uid work = do
   now <- liftIO getCurrentTime
-  jobRecordKey <- runDb (insert (JobRecord description uid now 0))
+  jobRecordKey <- runDb (insert (JobRecord description uid now False 0))
   chan <- reader getChan
   liftIO (writeChan chan (JobQueueItem jobRecordKey work))
 
 worker :: String -> Int -> ConnectionString -> Chan JobQueueItem -> IO ()
-worker source port connString chan = runNoLoggingT $
-  withPostgresqlConn connString $ \ conn -> lift $ forever $
-    do JobQueueItem jobRecordKey work <- readChan chan
-       progress <- newMVar undefined
-       runNoLoggingT $ withPostgresqlConn connString $ \ conn' -> lift $ do
-         tid <- forkIO (monitor progress jobRecordKey conn')
-         runReaderT work ((source, port, conn), progress)
-         killThread tid
-       runSqlConn (update jobRecordKey [JobRecordProgress =. 100]) conn
+worker source port connString chan = forever $ do
+  JobQueueItem jobRecordKey work <- readChan chan
+  runNoLoggingT $ withPostgresqlConn connString $ \ conn -> lift $ do
+    runNoLoggingT $ withPostgresqlConn connString $ \ conn' -> lift $ do
+      mJobRecord <- runSqlConn (get jobRecordKey) conn
+      if maybe False jobRecordCancelled mJobRecord then return ()
+      else do progress <- newMVar undefined
+              tid <- forkIO (monitor progress jobRecordKey conn')
+              runReaderT work ((source, port, conn), progress)
+              killThread tid
+              runSqlConn (update jobRecordKey [JobRecordProgress =. 100]) conn
 
 monitor :: MVar (Int, Int) -> Key JobRecord -> SqlBackend -> IO ()
 monitor progress jobRecordKey conn = forever $ do

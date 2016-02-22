@@ -23,6 +23,7 @@ share [ mkPersist sqlSettings,
       description   String
       scheduledBy   UserId
       scheduledOn   UTCTime
+      cancelled     Bool
       progress      Double
   |]
 

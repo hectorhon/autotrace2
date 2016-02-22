@@ -167,6 +167,7 @@ assignRolePage (Entity uid user) = layout "Assign new role" $ do
       , (LopcAdminRole, "LOPC admin")
       , (LopcUserRole, "LOPC user")
       , (ManageUsersRole, "Manage users")
+      , (SysAdminRole, "System admin")
       ]
     button "Save"
     cancelButton "assign-role-cancel-button"
