@@ -184,8 +184,8 @@ listBlcsTags aid = do
     bids <- descendantBlcsOf aid
     selectList [BlcId <-. bids] [Asc BlcName]
   LocalTime today _ <- liftIO (liftM (utcToLocalTime tz) getCurrentTime)
-  let start = UTCTime (addDays (-1) today) 0
-  let end = UTCTime today 0
+  let start = localTimeToUTC tz (LocalTime (addDays (-1) today) midnight)
+  let end = localTimeToUTC tz (LocalTime today midnight)
   let (pblcs, parseErrors) = runWriter (mapM parseBlc blcs)
   let tags = concat (map listBlcTags pblcs)
   url <- reader getSrcUrl
