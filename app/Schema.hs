@@ -31,6 +31,7 @@ share [ mkPersist sqlSettings,
       name         String
       area         AreaId
       uptimeCond   String
+      lastCalc     UTCTime Maybe
     ApcInterval json
       apc          ApcId
       start        UTCTime
@@ -95,7 +96,7 @@ instance FromFormUrlEncoded Apc where
     uptimeCond <- maybe (throwError "Missing uptime condition")
                         (return . unpack)
                         (lookup "uptimecond" params)
-    return (Apc name area uptimeCond)
+    return (Apc name area uptimeCond Nothing)
 
 instance FromFormUrlEncoded Cv where
   fromFormUrlEncoded params = runExcept $ do

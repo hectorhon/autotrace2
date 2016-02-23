@@ -35,6 +35,7 @@ apcSite = toCreateApc
      :<|> deleteApc
      :<|> toCalculateApc
      :<|> calculateApc
+     :<|> incrementalCalculateApc
      :<|> viewApcPerformance
 
      :<|> toCreateApcCv
@@ -115,15 +116,32 @@ calculateApc aid apcId (start, end) = do
   >> redirect (viewApcLink' aid apcId)
   >> return undefined
 
+incrementalCalculateApc :: Key Area -> Key Apc -> AppM Text
+incrementalCalculateApc aid apcId = do
+  mApc <- runDb (selectFirst [ApcArea ==. aid, ApcId ==. apcId] [])
+  case mApc of
+    Nothing -> lift (left err404)
+    Just (Entity _ apc) -> do
+      now <- liftIO getCurrentTime
+      let today = utcToLocalDay now
+      let yesterday = addDays (-1) today
+      let start = case apcLastCalc apc of
+            Nothing -> localDayToUTC today
+            Just t -> max (addUTCTime (-300) t) (localDayToUTC yesterday)
+      markCalculate start now (Entity apcId apc)
+      runDb (update apcId [ApcLastCalc =. (Just now)])
+      redirect (viewApcLink' aid apcId)
+      return undefined
+
 viewApcPerformance :: Key Area -> Key Apc -> Maybe Day -> Maybe Day -> AppM Html
 viewApcPerformance aid apcId mStart mEnd = do
   mApc <- runDb $ selectFirst [ApcArea ==. aid, ApcId ==. apcId] []
   case mApc of
     Nothing  -> lift (left err404)
     Just apc -> do
-      yesterday <- liftIO (relativeDay (-1))
-      let start = maybe yesterday id mStart
-      let end = maybe yesterday id mEnd
+      today <- liftIO (relativeDay 0)
+      let start = maybe today id mStart
+      let end = maybe today id mEnd
       let start' = localDayToUTC start
       let end' = localDayToUTC (addDays 1 end)
       (uptimes, issues, cvs, cvExceeds) <- runDb $ do

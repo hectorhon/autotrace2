@@ -22,6 +22,7 @@ type ApcSite = ToCreateApc
           :<|> DeleteApc
           :<|> ToCalculateApc
           :<|> CalculateApc
+          :<|> IncrementalCalculateApc
           :<|> ViewApcPerformance
 
           :<|> ToCreateApcCv
@@ -79,6 +80,12 @@ type CalculateApc = "area" :> Capture "aid" (Key Area)
                     :> ReqBody '[FormUrlEncoded] (Day, Day)
                     :> RequireAuth ControlAdminRole'
                     :> Post '[PlainText] Text
+
+type IncrementalCalculateApc = "area" :> Capture "aid" (Key Area)
+                               :> "apc" :> Capture "apcId" (Key Apc)
+                               :> "icalculate"
+                               :> RequireAuth ControlAdminRole'
+                               :> Post '[PlainText] Text
 
 type ViewApcPerformance = "area" :> Capture "aid" (Key Area)
                           :> "apc" :> Capture "apcId" (Key Apc) :> "performance"

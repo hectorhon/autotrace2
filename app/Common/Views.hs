@@ -180,7 +180,7 @@ datepicker fieldId fieldName fieldValue = do
   script $ toHtml $
     " $('#" ++ fieldId ++ "').datepicker({ \
     \   dateFormat: 'dd . mm . yy', \
-    \   maxDate: -1, \
+    \   maxDate: 0, \
     \ });"
 
 navigation :: [(String, AttributeValue)] -> Int -> Html
