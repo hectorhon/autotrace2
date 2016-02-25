@@ -5,7 +5,7 @@ module TimeSeriesData.Types where
 import Data.Time
 import Data.Text
 import Data.Attoparsec.Text
-import Data.Aeson
+import Data.Aeson hiding (decode)
 
 data TSValue = Continuous Double
              | Discrete String
@@ -29,10 +29,9 @@ data TSData = TSData { startOf :: NominalDiffTime
                      , endOf   :: NominalDiffTime
                      , dataOf  :: [(String, [TSPoint])] }
 
-decode :: Text -> Maybe [TSPoint]
-decode raw = maybeResult $ feed (parse tsPointsParser raw) "\n"
-  where tsPointsParser = (many' $ tsPointParser <* endOfLine)
-        tsPointParser = do t <- decimal
+decode :: Text -> Maybe TSPoint
+decode = either (\ _ -> Nothing) Just .  parseOnly tsPointParser
+  where tsPointParser = do t <- decimal
                            _ <- char '\t'
                            v <- tsValueParser
                            return $ TSPoint (fromIntegral (t :: Integer)) v
