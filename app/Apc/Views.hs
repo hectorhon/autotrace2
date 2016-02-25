@@ -2,12 +2,14 @@
 
 module Apc.Views where
 
-import Text.Blaze.Html5 as H hiding (area, map)
+import Text.Blaze.Html5 as H hiding (area, map, head)
 import Text.Blaze.Html5.Attributes as Ha hiding (start)
 import Database.Persist.Postgresql
 import Control.Monad (forM_)
 import Data.Aeson
 import Data.HashMap.Strict (fromList)
+import Data.List (groupBy, sortOn)
+import Data.Function (on)
 import qualified Data.ByteString.Lazy.Char8 as L (unpack, concat)
 import Common.Views
 import Area.Types
@@ -45,14 +47,19 @@ apcEditPage (Entity aid apc) parent = layout (apcName apc) $ do
 apcsPage :: [Entity Apc] -> Html
 apcsPage apcs = layout "APC list" $ do
   h1 "Select an APC"
-  ul $ do
-    forM_ apcs (\ (Entity aid apc) -> li $
-      a ! href (viewApcPerformanceDefaultDayLink (apcArea apc) aid)
-        $ toHtml (apcName apc))
+  forM_ (groupByAccessor (head . apcName . entityVal) apcs) $ \ apcs' -> do
+    h2 $ toHtml $ (head . apcName . entityVal) (head apcs')
+    ul $ do
+      forM_ apcs' (\ (Entity aid apc) -> li $
+        a ! href (viewApcPerformanceDefaultDayLink (apcArea apc) aid)
+          $ toHtml (apcName apc))
   p $ do
     H.span "To create a new APC, select the specific area "
     a ! href (viewAreasLink "area") $ "here"
     H.span "."
+
+groupByAccessor :: Ord b => (a -> b) -> [a] -> [[a]]
+groupByAccessor f = groupBy ((==) `on` f) . sortOn f
 
 apcCalculatePage :: Day -> Day -> Entity Apc -> Html
 apcCalculatePage start end (Entity aid apc) =

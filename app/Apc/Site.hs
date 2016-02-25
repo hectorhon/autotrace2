@@ -65,7 +65,7 @@ viewApc pid aid = do
     Nothing -> lift (left err404)
     Just apc -> do
       mParent <- runDb $ selectFirst [AreaId ==. pid] []
-      cvs <- runDb $ selectList [CvApc ==. aid] []
+      cvs <- runDb $ selectList [CvApc ==. aid] [Asc CvName]
       case mParent of
         Nothing -> lift (left err404)
         Just parent -> return (apcIdPage apc parent cvs)
