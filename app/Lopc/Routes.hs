@@ -20,7 +20,10 @@ type LopcRoutes = ViewLopcOverview
              :<|> EditLopc
              :<|> DeleteLopc
 
-type ViewLopcOverview = "lopc" :> QueryParam "year" Integer :> Get '[HTML] Html
+type ViewLopcOverview = "lopc"
+                      :> QueryParam "year" Integer
+                      :> QueryParam "hazardous" Bool
+                      :> Get '[HTML] Html
 type ViewLopcOverview' = "lopc" :> Get '[HTML] Html
 
 type ViewLopcList = "lopc" :> "list" :> QueryParam "status" Text

@@ -29,14 +29,19 @@ lopcHandlers = viewLopcOverview
           :<|> editLopc
           :<|> deleteLopc
 
-viewLopcOverview :: Maybe Integer -> AppM Html
-viewLopcOverview year = do
+viewLopcOverview :: Maybe Integer -> Maybe Bool -> AppM Html
+viewLopcOverview year mShowHazardousOnly = do
   (year', _, _) <- fmap toGregorian (liftIO (relativeDay 0))
   let yyyy = maybe year' id year
+  let showHazardousOnly = maybe False id mShowHazardousOnly
   (lopcs, years, numAreas, numPastOpen) <- runDb $ do
     lopcs <- select $ from $ \ i -> do
+      let hz = if showHazardousOnly
+               then i ^. LopcHazardous ==. val True
+               else val True
       where_ (    i ^. LopcReportedOn >=. val (fromGregorian yyyy 1 1)
-              &&. i ^. LopcReportedOn <. val (fromGregorian (yyyy + 1) 1 1))
+              &&. i ^. LopcReportedOn <. val (fromGregorian (yyyy + 1) 1 1)
+              &&. hz)
       orderBy [asc (i ^. LopcArea1)]
       return i
     dates <- select $ distinct $ from $ \ i -> return (i ^. LopcReportedOn)
@@ -49,7 +54,8 @@ viewLopcOverview year = do
            , map (toYear . unValue) dates
            , maybe 0 unValue (listToMaybe numAreas)
            , maybe 0 unValue (listToMaybe numPastOpen))
-  return (lopcOverviewPage lopcs yyyy (sort $ nub (year':years))
+  return (lopcOverviewPage lopcs
+                           yyyy (sort $ nub (year':years)) showHazardousOnly
                            numAreas numPastOpen)
   where toYear d = let (y, _, _) = toGregorian d in y
 

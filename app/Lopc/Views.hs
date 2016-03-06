@@ -16,13 +16,29 @@ import Common.Views
 import Lopc.Types
 import Lopc.Links
 
-lopcOverviewPage :: [Entity Lopc] -> Integer -> [Integer] -> Int -> Int -> Html
-lopcOverviewPage lopcs year years numAreas numPastOpen = layout "LOPC" $ do
+data Bool' = True' | False' deriving Eq  -- Hack for selectField
+instance Show Bool' where
+  show True' = "true"
+  show False' = "false"
+toBool :: Bool' -> Bool
+toBool True' = True
+toBool False' = False
+toBool' :: Bool -> Bool'
+toBool' True = True'
+toBool' False = False'
+
+lopcOverviewPage :: [Entity Lopc] -> Integer -> [Integer] -> Bool -> Int -> Int 
+                 -> Html
+lopcOverviewPage lopcs year years showHazardousOnly numAreas numPastOpen =
+ layout "LOPC" $ do
   h1 "LOPC"
   lopcNavigation 1
   h2 "YTD summary"
-  H.form ! class_ "line-form" ! Ha.style "text-align:left;" $
+  H.form ! class_ "line-form" ! Ha.style "text-align:left;" $ do
     selectField "Year" "year" P.id (Just year) (zip years (map show years))
+      ! onchange "this.form.submit()"
+    selectField "Subset" "hazardous" P.id (Just (toBool' showHazardousOnly))
+      [(True', "Hazardous only"), (False', "All")]
       ! onchange "this.form.submit()"
   let summary = let lopcs' = map entityVal lopcs
                     grouped= [ filter ((== MajorLopc).lopcClassification) lopcs'
