@@ -49,7 +49,8 @@ viewLopcOverview year = do
            , map (toYear . unValue) dates
            , maybe 0 unValue (listToMaybe numAreas)
            , maybe 0 unValue (listToMaybe numPastOpen))
-  return (lopcOverviewPage lopcs yyyy (sort $ nub years) numAreas numPastOpen)
+  return (lopcOverviewPage lopcs yyyy (sort $ nub (year':years))
+                           numAreas numPastOpen)
   where toYear d = let (y, _, _) = toGregorian d in y
 
 viewLopcList :: Maybe Text -> AppM Html
