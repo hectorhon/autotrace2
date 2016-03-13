@@ -129,7 +129,7 @@ type EditApcCv = "area" :> Capture "aid" (Key Area)
 
 type DeleteApcCv = "area" :> Capture "aid" (Key Area)
                    :> "apc" :> Capture "apcId" (Key Apc)
-                   :> "cv" :> Capture "cid" (Key Cv) :> "definition"
+                   :> "cv" :> Capture "cid" (Key Cv) :> "edit"
                    :> RequireAuth ControlAdminRole'
                    :> Delete '[PlainText] Text
 
