@@ -94,12 +94,15 @@ lopcListPage lopcs isOpen = layout "LOPC List" $ do
       col ! class_ "lopc-table-col-2"
       col ! class_ "lopc-table-col-3"
       col ! class_ "lopc-table-col-4"
+      col ! class_ "lopc-table-col-5"
       tr $ th "Area" ! colspan "2" >> th "Description" >> th "Reported on"
+        >> th "Ref."
       forM_ lopcs' $ \ (Entity lid lopc) -> tr $ do
         td $ toHtml (lopcArea2 lopc)
         td $ toHtml (lopcArea3 lopc)
         td $ a ! href (viewLopcLink lid) $ toHtml (lopcDescription lopc)
         td $ toHtml (lopcReportedOn lopc)
+        td $ toHtml (lopcOtherRef lopc)
 
 lopcPage :: Entity Lopc -> Html
 lopcPage (Entity lid lopc) = layout "View LOPC" $ do
