@@ -51,4 +51,5 @@ type EditLopc = "lopc" :> Capture "lid" (Key Lopc) :> "edit"
                 :> Post '[PlainText] Text
 
 type DeleteLopc = "lopc" :> Capture "lid" (Key Lopc) :> "edit"
+                  :> RequireAuth LopcAdminRole'
                   :> Delete '[PlainText] Text
