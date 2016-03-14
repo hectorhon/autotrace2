@@ -44,19 +44,31 @@ apcEditPage (Entity aid apc) parent = layout (apcName apc) $ do
   h2 "Definition - edit"
   apcForm parent (Just apc)
 
-apcsPage :: [Entity Apc] -> Html
-apcsPage apcs = layout "APC list" $ do
-  h1 "Select an APC"
-  forM_ (groupByAccessor (head . apcName . entityVal) apcs) $ \ apcs' -> do
-    h2 $ toHtml $ (head . apcName . entityVal) (head apcs')
-    ul $ do
-      forM_ apcs' (\ (Entity aid apc) -> li $
-        a ! href (viewApcPerformanceDefaultDayLink (apcArea apc) aid)
-          $ toHtml (apcName apc))
+apcsPage :: [Entity Apc] -> [[Entity ApcInterval]] -> UTCTime -> UTCTime -> Html
+apcsPage apcs uptimess start' end' = layout "APC list" $ do
+  h1 "APC list"
+  table ! class_ "apc-list-table" $ do
+    tr $ th "" >> th "Uptime today"
+    forM_ (groupByAccessor (head . apcName . entityVal) apcs) $ \ apcs' -> do
+      tr $ td ! colspan "2"
+              ! Ha.style "text-align:center;height:1em;"
+              $ ""
+      forM_ apcs' (\ (Entity aid apc) -> tr $ do
+        td ! Ha.style "text-align:center;"
+           $ a ! href (viewApcPerformanceDefaultDayLink (apcArea apc) aid)
+               $ toHtml (apcName apc)
+        td ! Ha.id (stringValue ("uptimes-" ++ show (fromSqlKey aid)))
+          ! Ha.style "position:relative;background-color:lightgrey;width:500px;"
+          $ "")
   p $ do
     H.span "To create a new APC, select the specific area "
     a ! href (viewAreasLink "area") $ "here"
     H.span "."
+  script $ toHtml $ L.unpack $
+    L.concat [ "var start = new Date('", encode start', "');"
+             , "var end = new Date('", encode end', "');"
+             , "var uptimess = ", (encode uptimess), ";"        ]
+  script ! src "/apcs.js" $ ""
 
 groupByAccessor :: Ord b => (a -> b) -> [a] -> [[a]]
 groupByAccessor f = groupBy ((==) `on` f) . sortOn f

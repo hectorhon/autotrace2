@@ -329,6 +329,14 @@ button:hover {
     color: black;
 }
 
+.apc-list-table {
+    margin: auto;
+}
+
+.apc-list-table td {
+    border-left: 10px solid white;
+}
+
 .lopc-table-col-1 { width: 15%; }
 .lopc-table-col-2 { width: 18%; }
 .lopc-table-col-3 { width: 40%; }

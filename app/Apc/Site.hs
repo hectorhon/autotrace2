@@ -71,7 +71,20 @@ viewApc pid aid = do
         Just parent -> return (apcIdPage apc parent cvs)
 
 viewApcs :: AppM Html
-viewApcs = runDb $ selectList [] [Asc ApcName] >>= return . apcsPage
+viewApcs = do
+  today <- liftIO (relativeDay 0)
+  let start = localDayToUTC today
+  let end = localDayToUTC (addDays 1 today)
+  (apcs, uptimess) <- runDb $ do
+    apcs <- selectList [] [Asc ApcName]
+    uptimess <- mapM (getUptimes start end . entityKey) apcs
+    return (apcs, uptimess)
+  return (apcsPage apcs uptimess start end)
+  where getUptimes start' end' apcId = (flip selectList) [Asc ApcIntervalStart]
+          ([ApcIntervalApc ==. apcId] ++
+           (    [ApcIntervalStart >=. start', ApcIntervalStart <.  end']
+            ||. [ApcIntervalEnd   >.  start', ApcIntervalEnd   <=. end']
+            ||. [ApcIntervalStart <=. start', ApcIntervalEnd   >=. end']))
 
 toEditApc :: Key Area -> Key Apc -> AppM Html
 toEditApc pid aid = do
