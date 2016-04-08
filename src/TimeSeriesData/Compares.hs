@@ -122,5 +122,5 @@ compress' r'@((start', end'), o') (r@((start, end), o):rs)
 compress' _ _ = assert False undefined
 
 near :: RealFrac a => a -> a -> Bool
-near a b = if rel == 0 then True else (abs a - abs b) / rel < 0.001 
+near a b = if rel == 0 then True else (abs a - abs b) / rel < 0.01
   where rel = max (abs a) (abs b)
