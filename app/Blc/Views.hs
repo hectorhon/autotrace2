@@ -136,7 +136,7 @@ areaBlcPage start end (Entity aid area) eResults =
         h2 "Summary"
         byAreasBlcResultTable start end [areaResult] 
         p $ do
-          a ! href (viewBlcBadActorsLink aid start start 95 95)
+          a ! href (viewBlcBadActorsLink aid start end 95 95)
             $ "View all bad actors"
           case areaParent area of
             Nothing -> return ()
